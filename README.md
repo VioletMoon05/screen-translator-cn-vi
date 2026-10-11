@@ -1,0 +1,131 @@
+# Screen Translator CN-VI (Java + Python)
+
+Nhận diện chữ Trung (giản thể/phồn thể) trong một vùng màn hình, dịch sang tiếng Việt và **vẽ bản dịch đè lên đúng vị trí chữ gốc**; tự cập nhật khi cuộn trang và tự xóa bản dịch khi chữ gốc biến mất.
+
+## Phân chia Java / Python
+
+| Phần | Ngôn ngữ | Vì sao |
+|---|---|---|
+| Giao diện, chọn vùng, overlay trong suốt click-through, phím tắt toàn cục, chụp màn hình, phát hiện thay đổi, đồng bộ trạng thái | **Java 17 (Swing + JNA)** | Điều khiển cửa sổ Windows ổn định, DPI, nhiều màn hình |
+| OCR, gộp dòng thành đoạn, dịch, phân tích nền/màu chữ, inpaint | **Python 3.11 (RapidOCR/ONNX, OpenCV)** | Hệ sinh thái OCR/xử lý ảnh |
+
+Java khởi chạy Python như tiến trình con và nói chuyện qua HTTP **chỉ trên 127.0.0.1**. Khi Java thoát (kể cả bị kill) Python tự thoát.
+
+```
+screen-translator-cn-vi/
+├─ pom.xml                      Maven (Java 17, JNA, Gson, shade -> 1 file jar)
+├─ setup.bat / run.bat          cài đặt + chạy
+├─ build_backend_exe.bat        đóng gói backend Python thành exe (PyInstaller)
+├─ package_app.bat              đóng gói cả ứng dụng (jpackage + PyInstaller)
+├─ python/
+│  ├─ server.py                 OCR + dịch + inpaint (HTTP server)
+│  ├─ selftest.py               kiểm thử backend bằng ảnh chữ Trung tự tạo
+│  └─ requirements.txt
+└─ src/main/java/vn/st/
+   ├─ Main, MainWindow          cửa sổ điều khiển
+   ├─ RegionSelector            chọn vùng bằng kéo chuột (nhiều màn hình)
+   ├─ OverlayWindow             overlay trong suốt, không nhận chuột, tự loại khỏi ảnh chụp
+   ├─ Pipeline                  chụp -> phát hiện thay đổi -> OCR/dịch -> cập nhật overlay
+   ├─ PythonBackend             quản lý tiến trình Python + HTTP
+   ├─ HotkeyManager, Win32      phím tắt toàn cục, API Windows qua JNA (không cần jna-platform)
+   ├─ SettingsDialog, Config    cài đặt (API key mã hóa bằng Windows DPAPI)
+   └─ Item                      một khối bản dịch
+```
+
+## Cài đặt (Windows 10 2004+ / 11)
+
+1. **Python 3.11** (python.org, tick *Add python.exe to PATH*).
+2. **JDK 17+** (ví dụ Temurin) và **Maven** (`mvn -v` phải chạy được). JAVA_HOME trỏ tới JDK.
+3. Mở CMD tại thư mục dự án:
+
+```bat
+setup.bat
+run.bat
+```
+
+`setup.bat` tạo venv, cài thư viện, chạy `selftest.py` (kiểm tra OCR) rồi build jar. Lần chạy đầu cần mạng để pip tải thư viện; sau đó OCR chạy hoàn toàn cục bộ (model đã nằm trong gói `rapidocr-onnxruntime`).
+
+Chạy tay (không dùng bat):
+```bat
+python -m venv python\.venv
+python\.venv\Scripts\pip install -r python\requirements.txt
+mvn -q -DskipTests package
+java -jar target\screen-translator-1.0.0.jar
+```
+
+## Cách dùng
+
+1. Mở ứng dụng, đợi dòng "Sẵn sàng" (backend nạp OCR).
+2. **Bắt đầu dịch** → màn hình mờ nhẹ → giữ chuột trái, kéo, thả để chọn vùng. `Esc`/chuột phải để hủy. Cửa sổ điều khiển tự thu nhỏ.
+3. Bản dịch hiện ngay trên chữ Trung. Cuộn trang: chữ cũ bị gỡ, chữ mới được quét và dịch tự động.
+
+Phím tắt toàn cục (đổi được trong Cài đặt, đủ F1–F12): `F6` bật/tắt overlay · `F7` tạm dừng/tiếp tục · `F8` chọn lại vùng · `Esc` hủy chọn vùng. Nếu phím trùng ứng dụng khác, cửa sổ sẽ báo đỏ — hãy đổi phím.
+
+Chế độ "Tự động dịch" tắt → chỉ dịch khi bấm **Dịch ngay**.
+
+## Cấu hình dịch thuật
+
+**A. Google (mặc định, không cần key).** Dùng thư viện `deep-translator` gọi endpoint web không chính thức của Google Dịch; có thể bị giới hạn/chặn nếu gọi quá nhiều. Chỉ gửi *văn bản OCR*, không gửi ảnh.
+
+**B. Dịch hoàn toàn cục bộ (Ollama / LM Studio / bất kỳ API tương thích OpenAI).** Cài Ollama, rồi:
+```bat
+ollama pull qwen2.5:7b
+```
+Cài đặt → Dịch vụ: `openai`, API URL `http://localhost:11434/v1`, Model `qwen2.5:7b`, API key để trống. Có thể dùng dịch vụ đám mây tương thích OpenAI bằng cách điền URL + key (key lưu mã hóa DPAPI trong `%USERPROFILE%\.screen-translator\config.json`, không nằm trong mã nguồn). Chất lượng/tốc độ phụ thuộc model và máy; hãy tự đo trên máy bạn.
+
+Bản dịch được cache theo văn bản nguồn (5000 mục) nên chữ lặp lại không gọi dịch lại.
+
+## Cách hệ thống tránh dịch sai vị trí
+
+- **Overlay tự loại khỏi ảnh chụp** (`SetWindowDisplayAffinity(WDA_EXCLUDEFROMCAPTURE)`), nên OCR luôn thấy chữ gốc. Nếu Windows quá cũ hoặc việc này không hiệu lực, ứng dụng tự chuyển sang *ẩn overlay trong tích tắc lúc chụp* (có thể hơi nhấp nháy). Cài đặt → "Ẩn overlay khi chụp" ép dùng cách này.
+- **Phát hiện thay đổi** theo lưới ô 40px (lấy mẫu 8×8 điểm/ô). Khi một ô đổi: các bản dịch giao với vùng đổi bị gỡ ngay; chờ màn hình **ổn định một nhịp quét** rồi mới OCR *đúng vùng đã đổi* (mở rộng 2 ô). Màn hình đổi liên tục (video) vẫn được quét sau tối đa 1,5 giây.
+- **Số thứ tự thay đổi**: mỗi kết quả OCR mang số thứ tự lúc gửi; nếu sau đó vùng đó lại đổi thì kết quả bị bỏ → kết quả chậm không ghi đè kết quả mới. Dòng bị cắt ở mép vùng quét bị loại, bản dịch cũ của dòng nguyên vẹn được giữ.
+- **Giữ bố cục**: dòng liền nhau, thẳng lề, cùng cỡ chữ được gộp thành đoạn để dịch đúng ngữ cảnh rồi vẽ trong khung bao của đoạn; tự co cỡ chữ (≥ 9px) và xuống dòng; nếu vẫn dài thì khung nền nới ra thay vì cắt chữ.
+- **Xóa chữ gốc**: nền đơn sắc → tô bằng màu trung vị của viền quanh chữ; nền phức tạp (độ lệch chuẩn viền cao) → `cv2.inpaint` (Telea) trên mặt nạ nét chữ rồi phủ lớp mờ nhẹ cho dễ đọc; màu chữ lấy từ chữ gốc, tự đổi đen/trắng nếu độ tương phản thấp.
+
+## Đóng gói thành .exe
+
+```bat
+package_app.bat
+```
+Chạy `mvn package`, PyInstaller đóng gói backend (`backend\server\server.exe`), `jpackage` tạo `dist\ScreenTranslatorCNVI\ScreenTranslatorCNVI.exe` kèm JRE. Java tự dùng `backend\server\server.exe` nếu có, nếu không dùng `python\server.py`. Chỉ đóng backend: `build_backend_exe.bat`. Gói PyInstaller với onnxruntime khá nặng (hàng trăm MB).
+
+## Xử lý lỗi thường gặp
+
+| Hiện tượng | Cách khắc phục |
+|---|---|
+| "Backend Python không khởi động được" | Chạy `python\.venv\Scripts\python.exe python\selftest.py` xem lỗi thật; chạy lại `setup.bat`. Cổng 8765 bận → đổi `port` trong `config.json`. |
+| Lần đầu rất lâu | Nạp model ONNX; chờ dòng "Sẵn sàng". |
+| Bản dịch nhấp nháy / OCR đọc lại tiếng Việt | Bật "Ẩn overlay khi chụp" trong Cài đặt; cập nhật Windows ≥ 10 bản 2004. |
+| Overlay không hiện trên game | Game ở chế độ **fullscreen độc quyền** không cho cửa sổ khác đè lên. Đổi sang *Borderless/Windowed fullscreen*. |
+| Phím F6/F7/F8 báo trùng | Đổi phím trong Cài đặt. |
+| "Dịch lỗi: …" | Mất mạng hoặc Google chặn → chuyển sang Ollama cục bộ; kiểm tra URL/model/key. |
+| Chữ nhỏ/mờ không nhận ra | Cài đặt → Ưu tiên `accuracy` (phóng to 1,5× trước OCR), hạ "Độ tin cậy OCR tối thiểu", hoặc chọn vùng nhỏ hơn. |
+| Máy yếu / CPU cao | Bật "Chế độ nhẹ", tăng "Tốc độ quét (ms)", chọn vùng nhỏ. |
+| Lệch vị trí khi nhiều màn hình khác DPI | Giới hạn đã biết (bên dưới); đặt vùng dịch trong một màn hình. |
+
+## Đã kiểm thử gì — và chưa kiểm thử gì
+
+Môi trường làm việc của tôi là Linux, **không phải Windows**, nên cần nói rõ:
+
+**Đã chạy thật (Linux + màn hình ảo Xvfb):**
+- `selftest.py`: OCR chữ giản thể, phồn thể, dòng lẫn Trung–Anh, chữ sáng trên nền tối, nền nhiều màu (kích hoạt inpaint). Backend nhận đúng chữ nhưng OCR vẫn có thể sai chữ, ví dụ 1 ký tự phồn thể bị đọc nhầm trong thử nghiệm của tôi.
+- Luồng Java end-to-end (chụp → phát hiện thay đổi → HTTP → OCR → overlay) với một cửa sổ hiển thị chữ Trung: dịch lần đầu đúng; đổi toàn bộ nội dung (mô phỏng cuộn) thì bản dịch cũ bị gỡ và bản mới xuất hiện; khi chữ gốc biến mất thì overlay trống.
+- Vẽ overlay tiếng Việt dài (xuống dòng, co chữ, nền phức tạp) ra ảnh để kiểm tra bằng mắt.
+
+**Biên dịch được nhưng CHƯA chạy trên Windows:** click-through qua JNA, `WDA_EXCLUDEFROMCAPTURE`, phím tắt `RegisterHotKey`, DPAPI. Đây là phần có rủi ro nhất; nếu gặp lỗi hãy gửi lại thông báo cụ thể để chỉnh.
+
+**Chưa kiểm:** các ca 7–10 và 13 trong danh sách bạn nêu (kéo cửa sổ, đổi độ phân giải/DPI, đổi màn hình, ngắt mạng giữa chừng, game toàn màn hình). Hãy tự thử theo danh sách đó; mã đã có xử lý lỗi mạng (hiện lỗi đỏ, không xóa overlay cũ) nhưng tôi chưa xác nhận trên thực tế.
+
+Tốc độ: trong môi trường thử của tôi, mỗi lần OCR cỡ 1–2 giây trên CPU của sandbox — **không đại diện** cho máy bạn. Thanh trạng thái hiển thị thời gian OCR/dịch thật; hãy dùng số đó thay vì tin con số của tôi.
+
+## Giới hạn đã biết
+
+- Chữ dọc (xếp theo cột) và chữ xoay chưa được xử lý riêng.
+- Dịch từng đoạn, không có ngữ cảnh giữa các trang; nên tên riêng có thể dịch không nhất quán (model LLM cục bộ giúp ích phần này).
+- Gộp đoạn dựa trên heuristic hình học; giao diện có nhiều mục sát nhau có thể bị gộp nhầm → tắt "Gộp các dòng liền nhau".
+- Chọn vùng và overlay dùng tọa độ logic của Java; nhiều màn hình có DPI khác nhau có thể lệch.
+- Cập nhật khi cuộn là "xóa → chờ ổn định → quét lại", nên có độ trễ ngắn sau khi dừng cuộn thay vì dịch mượt trong lúc cuộn.
+- Lịch sử SQLite chỉ ghi khi bật trong Cài đặt; mặc định không lưu gì.
+#   s c r e e n - t r a n s l a t o r - c n - v i  
+ 
