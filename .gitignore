@@ -1,0 +1,7 @@
+﻿python/.venv/
+target/
+backend/
+dist/
+build/
+__pycache__/
+*.pyc
