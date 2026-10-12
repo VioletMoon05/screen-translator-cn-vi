@@ -39,13 +39,17 @@ public class PythonBackend {
 
     private final Config cfg;
     private final Gson gson = new Gson();
-    private final HttpClient http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(3)).build();
+    private final HttpClient http = HttpClient.newBuilder().version(HttpClient.Version.HTTP_1_1).connectTimeout(Duration.ofSeconds(3)).build();
     private Process proc;
     private volatile String lastLog = "";
     private Consumer<String> logSink = s -> {};
 
     public PythonBackend(Config cfg) {
         this.cfg = cfg;
+    }
+
+    public synchronized boolean isAlive() {
+        return proc != null && proc.isAlive();
     }
 
     public void setLogSink(Consumer<String> s) {
@@ -110,7 +114,7 @@ public class PythonBackend {
                 while ((line = r.readLine()) != null) {
                     lastLog = line;
                     logSink.accept(line);
-                    System.err.println("[py] " + line);
+                    AppLog.info("[py] " + line);
                 }
             } catch (Exception ignored) {
             }

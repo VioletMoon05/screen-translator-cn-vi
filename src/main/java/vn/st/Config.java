@@ -33,6 +33,8 @@ public class Config {
     public String hkToggle = "F6";
     public String hkPause = "F7";
     public String hkReselect = "F8";
+    public String hkStop = "F9";
+    public int[] lastRegion = null;           // {x, y, w, h} vung dich gan nhat
 
     public static Path dir() {
         return Paths.get(System.getProperty("user.home"), ".screen-translator");

@@ -77,6 +77,12 @@ public final class Win32 {
         Pointer LocalFree(Pointer p);
     }
 
+    public interface Dwmapi extends Library {
+        Dwmapi I = Native.load("dwmapi", Dwmapi.class);
+
+        int DwmFlush();
+    }
+
     public interface Crypt32 extends Library {
         Crypt32 I = Native.load("crypt32", Crypt32.class);
 
@@ -99,6 +105,7 @@ public final class Win32 {
     public static void makeClickThrough(Window w) {
         if (!isWindows()) return;
         Pointer h = hwnd(w);
+        if (h == null) throw new IllegalStateException("Khong lay duoc HWND cua overlay");
         int ex = User32.I.GetWindowLongW(h, GWL_EXSTYLE);
         ex |= WS_EX_LAYERED | WS_EX_TRANSPARENT | WS_EX_NOACTIVATE | WS_EX_TOOLWINDOW;
         User32.I.SetWindowLongW(h, GWL_EXSTYLE, ex);
@@ -111,6 +118,15 @@ public final class Win32 {
             return User32.I.SetWindowDisplayAffinity(hwnd(w), WDA_EXCLUDEFROMCAPTURE);
         } catch (Throwable t) {
             return false;
+        }
+    }
+
+    /** Cho DWM ve xong khung hinh ke tiep (dam bao cua so vua an da that su bien mat truoc khi chup). */
+    public static void dwmFlush() {
+        if (!isWindows()) return;
+        try {
+            Dwmapi.I.DwmFlush();
+        } catch (Throwable ignored) {
         }
     }
 

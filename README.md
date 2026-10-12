@@ -56,12 +56,16 @@ java -jar target\screen-translator-1.0.0.jar
 ## Cách dùng
 
 1. Mở ứng dụng, đợi dòng "Sẵn sàng" (backend nạp OCR).
-2. **Bắt đầu dịch** → màn hình mờ nhẹ → giữ chuột trái, kéo, thả để chọn vùng. `Esc`/chuột phải để hủy. Cửa sổ điều khiển tự thu nhỏ.
-3. Bản dịch hiện ngay trên chữ Trung. Cuộn trang: chữ cũ bị gỡ, chữ mới được quét và dịch tự động.
+2. **1. Chọn vùng** → màn hình mờ nhẹ → giữ chuột trái, kéo, thả. `Esc`/chuột phải để hủy. Vùng được nhớ cho lần chạy sau.
+3. **2. Bắt đầu dịch** → cửa sổ điều khiển tự thu nhỏ và app **dịch ngay** vùng đó, rồi **dịch liên tục** (tự cập nhật khi cuộn/đổi nội dung) cho đến khi bạn bấm **Dừng dịch** hoặc phím `F9`. (Bấm "Bắt đầu dịch" khi chưa có vùng thì app mở bước chọn vùng rồi dịch luôn.)
 
-Phím tắt toàn cục (đổi được trong Cài đặt, đủ F1–F12): `F6` bật/tắt overlay · `F7` tạm dừng/tiếp tục · `F8` chọn lại vùng · `Esc` hủy chọn vùng. Nếu phím trùng ứng dụng khác, cửa sổ sẽ báo đỏ — hãy đổi phím.
+Phía trên vùng dịch có một thanh trạng thái nhỏ: *Đang quét…*, *Đang dịch • N khối*, *Tạm dừng* hoặc *Lỗi: …* (xanh = ổn, cam = cảnh báo, đỏ = lỗi) cùng viền xanh đứt nét quanh vùng. Nếu thấy "chưa thấy chữ Trung" nghĩa là app đang chạy nhưng OCR chưa nhận ra chữ Trung trong vùng.
+
+Phím tắt toàn cục (đổi được trong Cài đặt, đủ F1–F12): `F6` bật/tắt overlay · `F7` tạm dừng/tiếp tục · `F8` chọn lại vùng (chọn xong dịch luôn) · `F9` dừng dịch và mở lại cửa sổ điều khiển. Nếu phím trùng ứng dụng khác, cửa sổ sẽ báo đỏ — hãy đổi phím.
 
 Chế độ "Tự động dịch" tắt → chỉ dịch khi bấm **Dịch ngay**.
+
+**Tự phục hồi:** nếu OCR/dịch lỗi (mất mạng, Google chặn, backend chậm), app tự thử lại sau 2 → 4 → 8 → 15 giây ngay cả khi màn hình đứng yên; cứ 12 giây quét lại toàn vùng một lần để bắt các thay đổi nhỏ; nếu tiến trình Python chết, cửa sổ điều khiển tự khởi động lại nó. Mọi lỗi được ghi vào `%USERPROFILE%\.screen-translator\app.log` (nút **Mở file log**).
 
 ## Cấu hình dịch thuật
 
@@ -94,6 +98,7 @@ Chạy `mvn package`, PyInstaller đóng gói backend (`backend\server\server.ex
 
 | Hiện tượng | Cách khắc phục |
 |---|---|
+| Bấm "Bắt đầu dịch" mà không thấy bản dịch | Nhìn thanh trạng thái phía trên vùng dịch và dòng đỏ trong cửa sổ điều khiển; bấm **Mở file log** và gửi lại vài dòng cuối nếu vẫn lỗi. |
 | "Backend Python không khởi động được" | Chạy `python\.venv\Scripts\python.exe python\selftest.py` xem lỗi thật; chạy lại `setup.bat`. Cổng 8765 bận → đổi `port` trong `config.json`. |
 | Lần đầu rất lâu | Nạp model ONNX; chờ dòng "Sẵn sàng". |
 | Bản dịch nhấp nháy / OCR đọc lại tiếng Việt | Bật "Ẩn overlay khi chụp" trong Cài đặt; cập nhật Windows ≥ 10 bản 2004. |
@@ -112,6 +117,8 @@ Môi trường làm việc của tôi là Linux, **không phải Windows**, nên
 - `selftest.py`: OCR chữ giản thể, phồn thể, dòng lẫn Trung–Anh, chữ sáng trên nền tối, nền nhiều màu (kích hoạt inpaint). Backend nhận đúng chữ nhưng OCR vẫn có thể sai chữ, ví dụ 1 ký tự phồn thể bị đọc nhầm trong thử nghiệm của tôi.
 - Luồng Java end-to-end (chụp → phát hiện thay đổi → HTTP → OCR → overlay) với một cửa sổ hiển thị chữ Trung: dịch lần đầu đúng; đổi toàn bộ nội dung (mô phỏng cuộn) thì bản dịch cũ bị gỡ và bản mới xuất hiện; khi chữ gốc biến mất thì overlay trống.
 - Vẽ overlay tiếng Việt dài (xuống dòng, co chữ, nền phức tạp) ra ảnh để kiểm tra bằng mắt.
+
+**Bản cập nhật luồng "chọn vùng → bắt đầu → dịch liên tục" (kiểm trên Linux + Xvfb, backend OCR thật, dịch giả lập):** dịch ngay ở khung đầu tiên; lỗi OCR/dịch giả lập 2 lần liên tiếp trên màn hình đứng yên → tự thử lại và ra bản dịch; đổi nội dung → bản dịch mới; chữ Trung biến mất → overlay trống. Mã Java biên dịch sạch (JNA/Gson chỉ kiểm bằng stub, chưa qua `mvn`).
 
 **Biên dịch được nhưng CHƯA chạy trên Windows:** click-through qua JNA, `WDA_EXCLUDEFROMCAPTURE`, phím tắt `RegisterHotKey`, DPAPI. Đây là phần có rủi ro nhất; nếu gặp lỗi hãy gửi lại thông báo cụ thể để chỉnh.
 

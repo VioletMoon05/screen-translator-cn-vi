@@ -2,9 +2,15 @@ package vn.st;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
-/** Cua so dieu khien nho gon. */
+/**
+ * Cua so dieu khien nho gon.
+ * Luong: "Chon vung" -> "Bat dau dich" -> dich lien tuc tren desktop cho den khi bam "Dung dich" (hoac phim tat).
+ */
 public class MainWindow extends JFrame {
     private final Config cfg = Config.load();
     private final PythonBackend backend = new PythonBackend(cfg);
@@ -12,13 +18,16 @@ public class MainWindow extends JFrame {
     private final HotkeyManager hotkeys = new HotkeyManager();
     private final Pipeline pipeline;
     private volatile boolean ready = false;
+    private final AtomicBoolean restarting = new AtomicBoolean(false);
+    private Rectangle region;                       // vung dich dang chon (nho giua cac lan chay)
 
     private final JLabel lState = new JLabel("Đang khởi động OCR…");
+    private final JLabel lRegion = new JLabel(" ");
     private final JLabel lOcr = new JLabel(" ");
     private final JLabel lTr = new JLabel(" ");
     private final JLabel lErr = new JLabel(" ");
-    private final JButton bStart = new JButton("Bắt đầu dịch");
-    private final JButton bReselect = new JButton("Chọn lại vùng");
+    private final JButton bSelect = new JButton("1. Chọn vùng");
+    private final JButton bStart = new JButton("2. Bắt đầu dịch");
     private final JButton bPause = new JButton("Tạm dừng");
     private final JButton bStop = new JButton("Dừng dịch");
     private final JButton bOverlay = new JButton("Ẩn/hiện bản dịch");
@@ -29,6 +38,9 @@ public class MainWindow extends JFrame {
 
     public MainWindow() {
         super("Screen Translator CN-VI");
+        if (cfg.lastRegion != null && cfg.lastRegion.length == 4 && cfg.lastRegion[2] > 20 && cfg.lastRegion[3] > 20)
+            region = new Rectangle(cfg.lastRegion[0], cfg.lastRegion[1], cfg.lastRegion[2], cfg.lastRegion[3]);
+
         pipeline = new Pipeline(cfg, backend, overlay, (k, v) -> SwingUtilities.invokeLater(() -> {
             switch (k) {
                 case "state" -> { lState.setText(v); refreshButtons(); }
@@ -39,19 +51,23 @@ public class MainWindow extends JFrame {
             }
         }));
         setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
-        addWindowListener(new java.awt.event.WindowAdapter() {
+        addWindowListener(new WindowAdapter() {
             @Override
-            public void windowClosing(java.awt.event.WindowEvent e) { quit(); }
+            public void windowClosing(WindowEvent e) { quit(); }
         });
 
+        bStart.setFont(bStart.getFont().deriveFont(Font.BOLD));
         JPanel buttons = new JPanel(new GridLayout(0, 2, 6, 6));
-        for (JButton b : List.of(bStart, bReselect, bPause, bStop, bOverlay, bNow)) buttons.add(b);
+        for (JButton b : List.of(bSelect, bStart, bPause, bStop, bOverlay, bNow)) buttons.add(b);
         JButton bSettings = new JButton("Cài đặt");
+        JButton bLog = new JButton("Mở file log");
         buttons.add(bSettings);
+        buttons.add(bLog);
         buttons.add(cAuto);
 
         JPanel status = new JPanel(new GridLayout(0, 1, 0, 2));
         status.add(lState);
+        status.add(lRegion);
         status.add(lOcr);
         status.add(lTr);
         status.add(lErr);
@@ -62,27 +78,46 @@ public class MainWindow extends JFrame {
         root.add(buttons, BorderLayout.NORTH);
         root.add(status, BorderLayout.CENTER);
         setContentPane(root);
-        setSize(420, 330);
+        setSize(460, 400);
         setAlwaysOnTop(true);
         setLocationByPlatform(true);
 
-        bStart.addActionListener(e -> beginSelect());
-        bReselect.addActionListener(e -> beginSelect());
-        bPause.addActionListener(e -> pipeline.togglePause());
-        bStop.addActionListener(e -> pipeline.stop());
+        bSelect.addActionListener(e -> selectRegion(false));
+        bStart.addActionListener(e -> startTranslate());
+        bPause.addActionListener(e -> { pipeline.togglePause(); refreshButtons(); });
+        bStop.addActionListener(e -> stopTranslate());
         bOverlay.addActionListener(e -> pipeline.toggleOverlay());
         bNow.addActionListener(e -> pipeline.translateNow());
         bSettings.addActionListener(e -> new SettingsDialog(this, cfg, this::settingsChanged).setVisible(true));
+        bLog.addActionListener(e -> openLog());
         cAuto.addActionListener(e -> { cfg.autoTranslate = cAuto.isSelected(); cfg.save(); });
+        updateRegionLabel();
         refreshButtons();
         registerHotkeys();
         startBackend();
+
+        // giam sat backend: neu tien trinh Python chet thi tu khoi dong lai
+        Timer watchdog = new Timer(3000, e -> {
+            if (ready && !backend.isAlive() && restarting.compareAndSet(false, true)) {
+                AppLog.info("Backend Python da dung, khoi dong lai");
+                ready = false;
+                lState.setText("Backend dừng bất ngờ, đang khởi động lại…");
+                refreshButtons();
+                startBackend();
+            }
+        });
+        watchdog.start();
+    }
+
+    private void updateRegionLabel() {
+        lRegion.setText(region == null ? "Vùng dịch: chưa chọn"
+                : "Vùng dịch: " + region.width + "×" + region.height + " tại (" + region.x + ", " + region.y + ")");
     }
 
     private void refreshButtons() {
         boolean run = pipeline.isRunning();
+        bSelect.setEnabled(ready);
         bStart.setEnabled(ready && !run);
-        bReselect.setEnabled(ready);
         bPause.setEnabled(run);
         bPause.setText(pipeline.isPaused() ? "Tiếp tục" : "Tạm dừng");
         bStop.setEnabled(run);
@@ -98,13 +133,20 @@ public class MainWindow extends JFrame {
                     throw new IllegalStateException("Backend Python không khởi động được. Log cuối: " + backend.lastLog());
                 backend.pushConfig();
                 ready = true;
-                SwingUtilities.invokeLater(() -> { lState.setText("Sẵn sàng. Bấm \"Bắt đầu dịch\"."); refreshButtons(); });
-            } catch (Exception e) {
                 SwingUtilities.invokeLater(() -> {
-                    lState.setText("Lỗi khởi động backend");
+                    lState.setText(region == null ? "Sẵn sàng. Bấm \"Chọn vùng\", rồi \"Bắt đầu dịch\"."
+                            : "Sẵn sàng. Bấm \"Bắt đầu dịch\" (hoặc \"Chọn vùng\" để đổi vùng).");
+                    refreshButtons();
+                });
+            } catch (Exception e) {
+                AppLog.error("Khoi dong backend that bai", e);
+                SwingUtilities.invokeLater(() -> {
+                    lState.setText("Lỗi khởi động backend (xem file log)");
                     lErr.setText(String.valueOf(e.getMessage()));
                     lErr.setForeground(new Color(0xB00020));
                 });
+            } finally {
+                restarting.set(false);
             }
         }, "backend-start").start();
     }
@@ -113,7 +155,8 @@ public class MainWindow extends JFrame {
         List<String> failed = hotkeys.start(List.of(
                 new HotkeyManager.Binding(cfg.hkToggle, pipeline::toggleOverlay),
                 new HotkeyManager.Binding(cfg.hkPause, () -> { pipeline.togglePause(); refreshButtons(); }),
-                new HotkeyManager.Binding(cfg.hkReselect, this::beginSelect)));
+                new HotkeyManager.Binding(cfg.hkReselect, () -> selectRegion(true)),
+                new HotkeyManager.Binding(cfg.hkStop, this::stopTranslate)));
         if (!failed.isEmpty()) {
             lErr.setText("Phím tắt bị trùng, hãy đổi trong Cài đặt: " + String.join(", ", failed));
             lErr.setForeground(new Color(0xB00020));
@@ -130,17 +173,72 @@ public class MainWindow extends JFrame {
         overlay.repaint();
     }
 
-    /** Chon (hoac chon lai) vung dich. */
-    private void beginSelect() {
+    private void openLog() {
+        try {
+            Desktop.getDesktop().open(AppLog.file().toFile());
+        } catch (Exception e) {
+            lErr.setText("Log nằm tại: " + AppLog.file());
+        }
+    }
+
+    // ------------------------------------------------------------------ luong chinh
+    /** "Bat dau dich": co vung roi thi dich ngay; chua co vung thi chon vung truoc roi dich luon. */
+    private void startTranslate() {
         if (!ready) return;
+        if (region == null) {
+            selectRegion(true);
+            return;
+        }
+        launch(region, true);
+    }
+
+    private void stopTranslate() {
+        pipeline.stop();
+        refreshButtons();
+        if (getState() == Frame.ICONIFIED) setState(Frame.NORMAL);
+        toFront();
+    }
+
+    /** Thu nho cua so dieu khien (de khong lot vao vung dich) roi bat dau dich ngay. */
+    private void launch(Rectangle r, boolean needIconify) {
+        if (needIconify && getState() != Frame.ICONIFIED) {
+            setState(Frame.ICONIFIED);
+            Timer t = new Timer(400, e -> { pipeline.start(r); refreshButtons(); });   // doi hieu ung thu nho xong
+            t.setRepeats(false);
+            t.start();
+        } else {
+            pipeline.start(r);
+            refreshButtons();
+        }
+    }
+
+    /** Chon (hoac chon lai) vung dich. startAfter = true: chon xong dich luon. Dang chay thi chon xong tu dich lai. */
+    private void selectRegion(boolean startAfter) {
+        if (!ready) return;
+        final boolean wasRunning = pipeline.isRunning();
+        final Rectangle old = region;
         pipeline.stop();                       // go overlay cu truoc khi chon
         setState(Frame.ICONIFIED);
         Timer t = new Timer(350, e -> RegionSelector.select(r -> SwingUtilities.invokeLater(() -> {
-            if (r == null) {
-                setState(Frame.NORMAL);
-                toFront();
+            if (r == null) {                    // huy
+                if (wasRunning && old != null) {
+                    launch(old, false);
+                } else {
+                    setState(Frame.NORMAL);
+                    toFront();
+                }
             } else {
-                pipeline.start(r);               // cua so dieu khien van thu nho; mo lai tu taskbar
+                region = r;
+                cfg.lastRegion = new int[]{r.x, r.y, r.width, r.height};
+                cfg.save();
+                updateRegionLabel();
+                if (startAfter || wasRunning) {
+                    launch(r, false);            // dich ngay, cua so van thu nho (mo lai tu taskbar hoac nhan phim dung)
+                } else {
+                    setState(Frame.NORMAL);
+                    toFront();
+                    lState.setText("Đã chọn vùng. Bấm \"Bắt đầu dịch\" để dịch.");
+                }
             }
             refreshButtons();
         })));

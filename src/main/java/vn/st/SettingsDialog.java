@@ -22,7 +22,7 @@ public class SettingsDialog extends JDialog {
     private final JSlider opacity = new JSlider(0, 255, 255);
     private final JTextField color = new JTextField(10);
     private final JSpinner minConf = new JSpinner(new SpinnerNumberModel(0.5, 0.1, 0.95, 0.05));
-    private final JComboBox<String> hk1 = fkeys(), hk2 = fkeys(), hk3 = fkeys();
+    private final JComboBox<String> hk1 = fkeys(), hk2 = fkeys(), hk3 = fkeys(), hk4 = fkeys();
     private final JTextField python = new JTextField(24);
 
     private static JComboBox<String> fkeys() {
@@ -66,6 +66,7 @@ public class SettingsDialog extends JDialog {
         hk1.setSelectedItem(cfg.hkToggle);
         hk2.setSelectedItem(cfg.hkPause);
         hk3.setSelectedItem(cfg.hkReselect);
+        hk4.setSelectedItem(cfg.hkStop);
         python.setText(cfg.pythonExe);
 
         add("Dịch vụ dịch:", provider);
@@ -96,6 +97,7 @@ public class SettingsDialog extends JDialog {
         add("Phím: bật/tắt overlay:", hk1);
         add("Phím: tạm dừng/tiếp tục:", hk2);
         add("Phím: chọn lại vùng:", hk3);
+        add("Phím: dừng dịch:", hk4);
         span(hide);
         span(history);
         add("Python (để trống = tự tìm):", python);
@@ -142,6 +144,7 @@ public class SettingsDialog extends JDialog {
         cfg.hkToggle = (String) hk1.getSelectedItem();
         cfg.hkPause = (String) hk2.getSelectedItem();
         cfg.hkReselect = (String) hk3.getSelectedItem();
+        cfg.hkStop = (String) hk4.getSelectedItem();
         cfg.pythonExe = python.getText().trim();
         cfg.save();
     }

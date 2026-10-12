@@ -20,6 +20,8 @@ public class Pipeline {
     private static final int CELL = 40;              // kich thuoc o luoi (logical px)
     private static final int CHANGE_THRESHOLD = 6;   // chenh lech do sang trung binh / mau de coi la thay doi
     private static final long MAX_WAIT_MS = 1500;    // man hinh lien tuc thay doi (video...) van quet sau ngan nay
+    private static final long SWEEP_MS = 12000;      // luoi an toan: quet lai toan vung du man hinh "khong doi"
+    private static final long RETRY_MIN_MS = 2000, RETRY_MAX_MS = 15000;
 
     private record Change(long seq, Rectangle r) {}
 
@@ -30,6 +32,7 @@ public class Pipeline {
     private Robot robot;
 
     private volatile boolean running, paused, manualRequest;
+    private volatile long retryAt = 0, retryDelay = RETRY_MIN_MS, lastDispatch = 0;
     private volatile int generation = 0;
     private Thread loop;
     private final ExecutorService ocrPool = Executors.newSingleThreadExecutor(r -> {
@@ -68,12 +71,22 @@ public class Pipeline {
         synchronized (changeLog) {
             changeLog.clear();
         }
-        overlay.open(region);
+        retryAt = 0;
+        retryDelay = RETRY_MIN_MS;
+        try {
+            overlay.open(region);
+        } catch (Throwable t) {                 // overlay loi van phai chay duoc vong quet
+            AppLog.error("overlay.open that bai", t);
+            status.accept("err", "Overlay lỗi: " + t);
+        }
+        overlay.setBadge("Đang quét…", 0);
         final int gen = generation;
-        loop = new Thread(() -> runLoop(gen, region), "scan-loop");
+        final Rectangle reg = new Rectangle(region);
+        loop = new Thread(() -> runLoop(gen, reg), "scan-loop");
         loop.setDaemon(true);
         loop.start();
-        status.accept("state", "Đang dịch vùng " + r.width + "×" + r.height);
+        AppLog.info("Bat dau dich vung " + r);
+        status.accept("state", "Đang dịch vùng " + r.width + "×" + r.height + " (tự dịch liên tục đến khi bấm Dừng)");
     }
 
     public synchronized void stop() {
@@ -81,6 +94,7 @@ public class Pipeline {
         generation++;
         if (loop != null) loop.interrupt();
         loop = null;
+        overlay.setBadge("", 0);
         overlay.closeOverlay();
         status.accept("state", "Đã dừng");
     }
@@ -88,6 +102,7 @@ public class Pipeline {
     public void togglePause() {
         if (!running) return;
         paused = !paused;
+        overlay.setBadge(paused ? "Tạm dừng" : "Đang quét…", paused ? 2 : 0);
         status.accept("state", paused ? "Tạm dừng quét" : "Đang dịch vùng " + region.width + "×" + region.height);
     }
 
@@ -105,19 +120,27 @@ public class Pipeline {
         Sig prev = null;
         Rectangle pending = null;
         long firstPending = 0;
+        boolean first = true;
+        lastDispatch = System.currentTimeMillis();
+        try {
+            Thread.sleep(150);                  // doi lop chon vung bien mat han khoi man hinh
+        } catch (InterruptedException e) {
+            return;
+        }
         while (running && gen == generation) {
             long t0 = System.currentTimeMillis();
             try {
                 if (!paused) {
                     BufferedImage img = capture(reg);
+                    Rectangle whole = new Rectangle(0, 0, img.getWidth(), img.getHeight());
                     double scale = img.getWidth() / (double) reg.width;
                     Sig cur = new Sig(img, Math.max(8, (int) Math.round(CELL * scale)));
                     Rectangle dirty;
-                    if (prev == null) dirty = new Rectangle(0, 0, img.getWidth(), img.getHeight());
+                    if (prev == null) dirty = new Rectangle(whole);
                     else dirty = Sig.diff(prev, cur);
                     prev = cur;
                     if (dirty != null) {
-                        dirty = dirty.intersection(new Rectangle(0, 0, img.getWidth(), img.getHeight()));
+                        dirty = dirty.intersection(whole);
                         pending = pending == null ? dirty : pending.union(dirty);
                         if (firstPending == 0) firstPending = t0;
                         Rectangle logical = toLogical(dirty, scale);
@@ -127,22 +150,40 @@ public class Pipeline {
                             while (changeLog.size() > 300) changeLog.remove(0);
                         }
                     }
+                    boolean idle = !inFlight.get();
+                    // "Dich ngay" luc man hinh dung yen: quet toan vung
+                    if (manualRequest && pending == null) pending = new Rectangle(whole);
+                    // thu lai sau loi (mang/backend) va quet an toan dinh ky
+                    if (pending == null && idle) {
+                        boolean retry = retryAt != 0 && t0 >= retryAt;
+                        boolean sweep = cfg.autoTranslate && t0 - lastDispatch > (cfg.lowEnd ? 3 * SWEEP_MS : SWEEP_MS);
+                        if (retry || sweep) {
+                            pending = new Rectangle(whole);
+                            retryAt = 0;
+                        }
+                    }
                     boolean allowed = cfg.autoTranslate || manualRequest;
-                    boolean settled = dirty == null || t0 - firstPending > MAX_WAIT_MS;
-                    if (pending != null && allowed && settled && !inFlight.get()) {
+                    boolean settled = first || dirty == null || t0 - firstPending > MAX_WAIT_MS;
+                    if (pending != null && allowed && settled && idle) {
                         boolean forced = dirty != null;
                         dispatch(gen, img, scale, pending, seq, forced);
+                        lastDispatch = t0;
                         pending = null;
                         firstPending = 0;
                         manualRequest = false;
+                        first = false;
                     }
                 }
             } catch (InterruptedException e) {
                 return;
-            } catch (Exception e) {
-                status.accept("err", "Lỗi quét: " + e.getMessage());
+            } catch (Throwable e) {              // bat ca Error: vong quet khong duoc chet im lang
+                AppLog.error("Loi vong quet", e);
+                status.accept("err", "Lỗi quét: " + e);
+                overlay.setBadge("Lỗi quét", 3);
             }
-            long sleep = cfg.scanIntervalMs - (System.currentTimeMillis() - t0);
+            long interval = cfg.scanIntervalMs;
+            if (cfg.hideOverlayWhileCapture || !overlay.isCaptureExcluded()) interval = Math.max(interval, 600);   // che do an/hien: bot nhap nhay
+            long sleep = interval - (System.currentTimeMillis() - t0);
             try {
                 Thread.sleep(Math.max(15, sleep));
             } catch (InterruptedException e) {
@@ -155,7 +196,8 @@ public class Pipeline {
         boolean hide = (cfg.hideOverlayWhileCapture || !overlay.isCaptureExcluded()) && overlay.isUserVisible();
         if (hide) {
             overlay.setVisibleSync(false);
-            Thread.sleep(40);
+            Win32.dwmFlush();                    // cho DWM bo overlay khoi man hinh that su
+            Thread.sleep(30);
         }
         try {
             MultiResolutionImage m = robot.createMultiResolutionScreenCapture(r);
@@ -212,6 +254,8 @@ public class Pipeline {
                 }
                 if (resp.error != null && resp.items.isEmpty()) {
                     status.accept("err", resp.error);
+                    overlay.setBadge("Lỗi: " + resp.error, 3);
+                    scheduleRetry();
                     return;
                 }
                 List<Item> items = new ArrayList<>();
@@ -233,12 +277,28 @@ public class Pipeline {
                 status.accept("ocr", "OCR " + resp.ocr_ms + " ms • " + items.size() + " khối • tổng " + total + " ms");
                 status.accept("tr", "Dịch " + resp.tr_ms + " ms");
                 status.accept("err", resp.error == null ? "" : resp.error);
-            } catch (Exception e) {
+                if (resp.error != null) {          // dich loi mot phan -> thu lai
+                    overlay.setBadge(items.size() + " khối • " + resp.error, 2);
+                    scheduleRetry();
+                } else {
+                    retryDelay = RETRY_MIN_MS;
+                    overlay.setBadge(items.isEmpty() ? "Đang dịch • chưa thấy chữ Trung" : "Đang dịch • " + items.size() + " khối", 1);
+                }
+            } catch (Throwable e) {
+                AppLog.error("OCR/dich that bai", e);
                 status.accept("err", "Mất kết nối backend/OCR: " + e.getMessage());
+                overlay.setBadge("Mất kết nối OCR", 3);
+                scheduleRetry();
             } finally {
                 inFlight.set(false);
             }
         });
+    }
+
+    /** Thu lai sau loi, giu khoang cach tang dan de khong dap vao backend/mang. */
+    private void scheduleRetry() {
+        retryAt = System.currentTimeMillis() + retryDelay;
+        retryDelay = Math.min(RETRY_MAX_MS, retryDelay * 2);
     }
 
     // ------------------------------------------------------- phat hien thay doi

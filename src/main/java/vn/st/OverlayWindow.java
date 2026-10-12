@@ -28,6 +28,9 @@ public class OverlayWindow extends JWindow {
     private boolean nativeApplied = false;
     private volatile boolean excluded = false;
     private volatile boolean userVisible = true;
+    private int offY = 0;                         // le tren de ve thanh trang thai (ngoai vung dich)
+    private volatile String badgeText = "";
+    private volatile int badgeLevel = 0;          // 0 trung tinh, 1 ok, 2 canh bao, 3 loi
 
     public OverlayWindow(Config cfg) {
         super();
@@ -46,7 +49,12 @@ public class OverlayWindow extends JWindow {
                 g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_GASP);
                 g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+                paintBadge(g);
+                g.translate(0, offY);
                 for (Item it : items) paintItem(g, it);
+                g.setColor(new Color(0, 200, 120, 150));       // vien mong quanh vung dang dich
+                g.setStroke(new BasicStroke(1f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER, 10f, new float[]{6f, 4f}, 0f));
+                g.drawRect(0, 0, getWidth() - 1, getHeight() - offY - 1);
                 g.dispose();
             }
         };
@@ -74,19 +82,62 @@ public class OverlayWindow extends JWindow {
         }
     }
 
-    /** Dat vi tri theo vung dich va hien overlay. */
+    /** Dat vi tri theo vung dich va hien overlay. Loi native (JNA/Win32) khong duoc lam hong luong dich. */
     public void open(Rectangle region) {
         onEdt(() -> {
-            setBounds(region);
+            int room = region.y - RegionSelector.virtualBounds().y;
+            offY = room >= 20 ? 20 : 0;
+            setBounds(region.x, region.y - offY, region.width, region.height + offY);
             setVisible(true);                      // phai hien truoc de co HWND
             if (!nativeApplied) {
-                Win32.makeClickThrough(this);
-                excluded = Win32.excludeFromCapture(this);
                 nativeApplied = true;
+                try {
+                    Win32.makeClickThrough(this);
+                } catch (Throwable t) {
+                    AppLog.error("makeClickThrough that bai", t);
+                }
+                try {
+                    excluded = Win32.excludeFromCapture(this);
+                } catch (Throwable t) {
+                    excluded = false;
+                    AppLog.error("excludeFromCapture that bai", t);
+                }
+                AppLog.info("Overlay: captureExcluded=" + excluded);
             }
             if (!userVisible) setVisible(false);
             repaint();
         });
+    }
+
+    public void setBadge(String text, int level) {
+        badgeText = text == null ? "" : text;
+        badgeLevel = level;
+        repaint();
+    }
+
+    private void paintBadge(Graphics2D g) {
+        String t = badgeText;
+        if (t.isEmpty()) return;
+        g.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        FontMetrics fm = g.getFontMetrics();
+        int w = Math.min(getWidth(), fm.stringWidth(t) + 28), h = 18;
+        int y = offY > 0 ? 1 : 2;                   // khong con cho phia tren thi ve de len goc tren trai
+        int x = offY > 0 ? 0 : 2;
+        Color dot = switch (badgeLevel) {
+            case 1 -> new Color(0, 200, 120);
+            case 2 -> new Color(255, 170, 0);
+            case 3 -> new Color(230, 50, 60);
+            default -> new Color(150, 150, 150);
+        };
+        g.setColor(new Color(20, 20, 20, 220));
+        g.fillRoundRect(x, y, w, h, 8, 8);
+        g.setColor(dot);
+        g.fillOval(x + 7, y + 5, 8, 8);
+        g.setColor(Color.WHITE);
+        String shown = t;
+        while (shown.length() > 3 && fm.stringWidth(shown) > w - 28) shown = shown.substring(0, shown.length() - 2);
+        if (shown.length() < t.length()) shown += "…";
+        g.drawString(shown, x + 20, y + 13);
     }
 
     public void closeOverlay() {
