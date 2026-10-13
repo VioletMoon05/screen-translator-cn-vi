@@ -1,0 +1,841 @@
+# Tu dien Trung -> Viet (giản thể). Moi dong: TIENG_TRUNG<TAB>TIENG_VIET. Dong bat dau bang # la ghi chu.
+# Gia tri de TRONG = bo qua tu do (tro tu). Ban co the them tu rieng vao  ~/.screen-translator/glossary.tsv  (ghi de tu dien nay).
+# ---- giao dien / he thong
+设置	Cài đặt
+系统设置	Cài đặt hệ thống
+开始	Bắt đầu
+开始游戏	Bắt đầu trò chơi
+继续	Tiếp tục
+继续游戏	Tiếp tục trò chơi
+新游戏	Trò chơi mới
+退出	Thoát
+退出游戏	Thoát game
+确定	Đồng ý
+确认	Xác nhận
+取消	Hủy
+返回	Quay lại
+保存	Lưu
+删除	Xóa
+搜索	Tìm kiếm
+登录	Đăng nhập
+登陆	Đăng nhập
+注册	Đăng ký
+退出登录	Đăng xuất
+下载	Tải xuống
+上传	Tải lên
+文件	Tệp
+帮助	Trợ giúp
+关于	Giới thiệu
+关于我们	Về chúng tôi
+联系我们	Liên hệ chúng tôi
+语言	Ngôn ngữ
+音量	Âm lượng
+音乐	Âm nhạc
+音效	Hiệu ứng âm thanh
+声音	Âm thanh
+画质	Chất lượng hình ảnh
+图像	Đồ họa
+分辨率	Độ phân giải
+全屏	Toàn màn hình
+窗口	Cửa sổ
+控制	Điều khiển
+键盘	Bàn phím
+鼠标	Chuột
+手柄	Tay cầm
+菜单	Menu
+主菜单	Menu chính
+首页	Trang chủ
+主页	Trang chủ
+更多	thêm
+查看更多	Xem thêm
+更新	Cập nhật
+版本	Phiên bản
+网络	Mạng
+加载	Đang tải
+加载中	Đang tải
+正在加载	Đang tải
+请稍候	Vui lòng chờ
+请稍等	Vui lòng chờ
+成功	Thành công
+失败	Thất bại
+错误	Lỗi
+警告	Cảnh báo
+提示	Gợi ý
+打开	Mở
+关闭	Đóng
+开启	Bật
+全部	Tất cả
+选择	Chọn
+选项	Tùy chọn
+默认	Mặc định
+应用	Áp dụng
+重置	Đặt lại
+刷新	Làm mới
+复制	Sao chép
+粘贴	Dán
+剪切	Cắt
+编辑	Chỉnh sửa
+添加	Thêm
+新建	Tạo mới
+提交	Gửi
+发送	Gửi
+接收	Nhận
+分享	Chia sẻ
+收藏	Lưu yêu thích
+点赞	Thích
+评论	Bình luận
+关注	Theo dõi
+粉丝	Người theo dõi
+消息	Tin nhắn
+通知	Thông báo
+我的	Của tôi
+个人中心	Trang cá nhân
+用户名	Tên người dùng
+密码	Mật khẩu
+账号	Tài khoản
+账户	Tài khoản
+邮箱	Email
+手机号	Số điện thoại
+验证码	Mã xác minh
+同意	Đồng ý
+拒绝	Từ chối
+完成	Hoàn thành
+跳过	Bỏ qua
+查看	Xem
+详情	Chi tiết
+上一页	Trang trước
+下一页	Trang sau
+上一步	Bước trước
+下一步	Bước tiếp theo
+暂停	Tạm dừng
+播放	Phát
+视频	Video
+图片	Hình ảnh
+音频	Âm thanh
+直播	Phát trực tiếp
+隐私政策	Chính sách quyền riêng tư
+服务条款	Điều khoản dịch vụ
+用户协议	Thỏa thuận người dùng
+# ---- mua sam / web
+购物车	Giỏ hàng
+订单	Đơn hàng
+支付	Thanh toán
+优惠	Ưu đãi
+优惠券	Phiếu giảm giá
+折扣	Giảm giá
+立即购买	Mua ngay
+加入购物车	Thêm vào giỏ hàng
+客服	Chăm sóc khách hàng
+目录	Mục lục
+章节	Chương
+小说	Tiểu thuyết
+漫画	Truyện tranh
+阅读	Đọc
+作者	Tác giả
+简介	Giới thiệu
+最新	Mới nhất
+热门	Thịnh hành
+推荐	Đề xuất
+分类	Phân loại
+免费	Miễn phí
+价格	Giá
+数量	Số lượng
+# ---- game
+游戏	Trò chơi
+玩家	Người chơi
+等级	Cấp độ
+级	cấp
+经验	Kinh nghiệm
+经验值	Điểm kinh nghiệm
+金币	Vàng
+银币	Bạc
+钻石	Kim cương
+背包	Túi đồ
+商店	Cửa hàng
+商城	Cửa hàng
+任务	Nhiệm vụ
+主线任务	Nhiệm vụ chính
+支线任务	Nhiệm vụ phụ
+每日任务	Nhiệm vụ hằng ngày
+技能	Kỹ năng
+装备	Trang bị
+武器	Vũ khí
+防具	Giáp
+攻击	Tấn công
+攻击力	Sức tấn công
+防御	Phòng thủ
+防御力	Sức phòng thủ
+生命	Sinh lực
+生命值	Sinh lực
+魔法	Phép thuật
+魔法值	Ma lực
+体力	Thể lực
+速度	Tốc độ
+暴击	Chí mạng
+伤害	Sát thương
+好友	Bạn bè
+公会	Bang hội
+帮派	Bang phái
+排行榜	Bảng xếp hạng
+活动	Sự kiện
+邮件	Thư
+签到	Điểm danh
+充值	Nạp tiền
+购买	Mua
+出售	Bán
+领取	Nhận
+奖励	Phần thưởng
+副本	Phó bản
+地图	Bản đồ
+角色	Nhân vật
+英雄	Anh hùng
+怪物	Quái vật
+首领	Trùm
+战斗	Chiến đấu
+胜利	Chiến thắng
+复活	Hồi sinh
+升级	Nâng cấp
+强化	Cường hóa
+合成	Chế tạo
+抽卡	Quay thẻ
+宝箱	Rương báu
+道具	Vật phẩm
+物品	Vật phẩm
+限时	Giới hạn thời gian
+自动	Tự động
+手动	Thủ công
+存档	Lưu game
+读档	Tải game
+难度	Độ khó
+困难	Khó
+普通	Thường
+剩余	Còn lại
+时间	Thời gian
+# ---- dai tu / tro tu / lien tu
+我	tôi
+你	bạn
+您	quý vị
+他	anh ấy
+她	cô ấy
+它	nó
+我们	chúng tôi
+你们	các bạn
+他们	họ
+她们	họ
+这	này
+那	kia
+这个	cái này
+那个	cái kia
+这里	ở đây
+那里	ở đó
+什么	gì
+怎么	thế nào
+怎么样	thế nào
+为什么	tại sao
+谁	ai
+哪里	ở đâu
+哪	nào
+多少	bao nhiêu
+几	mấy
+不	không
+没有	không có
+没	không
+有	có
+在	ở
+是	là
+不是	không phải
+的	
+了	
+吗	không
+吧	
+呢	
+啊	
+和	và
+与	và
+或	hoặc
+或者	hoặc
+但是	nhưng
+但	nhưng
+因为	vì
+所以	nên
+如果	nếu
+可以	có thể
+不可以	không thể
+能	có thể
+会	sẽ
+要	muốn
+想	muốn
+去	đi
+来	đến
+到	đến
+看	xem
+说	nói
+做	làm
+用	dùng
+给	cho
+让	để
+被	bị
+把	
+对	đúng
+错	sai
+很	rất
+非常	rất
+太	quá
+也	cũng
+都	đều
+还	còn
+就	thì
+才	mới
+只	chỉ
+已经	đã
+正在	đang
+将	sẽ
+请	xin
+更	hơn
+最	nhất
+再	lại
+又	lại
+从	từ
+向	về phía
+为	vì
+被动	bị động
+# ---- cau chao / thong dung
+你好	xin chào
+您好	xin chào
+谢谢	cảm ơn
+感谢	cảm ơn
+对不起	xin lỗi
+没关系	không sao
+再见	tạm biệt
+欢迎	chào mừng
+欢迎使用	chào mừng bạn sử dụng
+欢迎来到	chào mừng đến với
+请问	xin hỏi
+好的	được
+很好	rất tốt
+不错	khá tốt
+好	tốt
+不好	không tốt
+今天	hôm nay
+明天	ngày mai
+昨天	hôm qua
+现在	bây giờ
+以后	sau này
+以前	trước đây
+时候	lúc
+今天天气很好	hôm nay thời tiết rất đẹp
+天气	thời tiết
+年	năm
+月	tháng
+日	ngày
+天	ngày
+小时	giờ
+分钟	phút
+秒	giây
+大	lớn
+小	nhỏ
+多	nhiều
+少	ít
+新	mới
+旧	cũ
+高	cao
+低	thấp
+快	nhanh
+慢	chậm
+真	thật
+假	giả
+简单	đơn giản
+容易	dễ
+重要	quan trọng
+公园	công viên
+玩	chơi
+我们去公园玩	chúng ta đi công viên chơi
+学习	học tập
+工作	công việc
+学校	trường học
+老师	giáo viên
+学生	học sinh
+朋友	bạn bè
+家	nhà
+人	người
+男	nam
+女	nữ
+中国	Trung Quốc
+越南	Việt Nam
+中文	tiếng Trung
+汉语	tiếng Trung
+英语	tiếng Anh
+越南语	tiếng Việt
+繁体中文	tiếng Trung phồn thể
+简体中文	tiếng Trung giản thể
+测试	thử nghiệm
+文字	văn bản
+测试文字	văn bản thử nghiệm
+世界	thế giới
+这是	đây là
+一个	một
+翻译	dịch
+屏幕	màn hình
+萤幕	màn hình
+荧幕	màn hình
+软件	phần mềm
+软体	phần mềm
+屏幕翻译	dịch màn hình
+翻译软件	phần mềm dịch
+信息	thông tin
+内容	nội dung
+名称	tên
+名字	tên
+状态	trạng thái
+类型	loại
+大小	kích thước
+日期	ngày tháng
+位置	vị trí
+# ---- so
+零	không
+一	một
+二	hai
+两	hai
+三	ba
+四	bốn
+五	năm
+六	sáu
+七	bảy
+八	tám
+九	chín
+十	mười
+百	trăm
+千	nghìn
+万	vạn
+第	thứ
+个	
+次	lần
+# ---- web / tai lieu / hoc tap / sang tao noi dung (bo sung)
+资讯	Tin tức
+官方资讯	Tin tức chính thức
+官方	Chính thức
+文档	Tài liệu
+技术分享	Chia sẻ kỹ thuật
+技术	Kỹ thuật
+课程	Khóa học
+热门课程	Khóa học thịnh hành
+课时	tiết học
+学院	Học viện
+创作	Sáng tác
+创作者	Người sáng tạo
+创作者学院	Học viện sáng tạo
+创作社区	Cộng đồng sáng tạo
+创作功能	Chức năng sáng tạo
+社区	Cộng đồng
+专区	Khu vực
+功能	Chức năng
+日志	Nhật ký
+更新日志	Nhật ký cập nhật
+创作功能更新日志	Nhật ký cập nhật chức năng sáng tạo
+迷你世界	Mini World
+行为树	Cây hành vi
+种植	Trồng trọt
+指南	Hướng dẫn
+触发器	Bộ kích hoạt
+编程	Lập trình
+学编程	Học lập trình
+看漫画	Xem truyện tranh
+数据	Dữ liệu
+玩转数据	Chơi thành thạo dữ liệu
+载具	Phương tiện
+搭建	Xây dựng
+如何	Làm thế nào
+如何搭建载具	Cách xây dựng phương tiện
+营造	Tạo dựng
+氛围	Bầu không khí
+恐怖	Kinh dị
+恐怖氛围	Bầu không khí kinh dị
+如何营造恐怖氛围	Cách tạo bầu không khí kinh dị
+进阶	Nâng cao
+滤镜	Bộ lọc
+参数	Tham số
+玩家	Người chơi
+设置玩家的滤镜参数	Cài đặt thông số bộ lọc của người chơi
+行为树种植指南	Hướng dẫn trồng cây hành vi
+触发器进阶	Trigger nâng cao
+教程	Hướng dẫn
+攻略	Hướng dẫn chơi
+下载中心	Trung tâm tải xuống
+开发者	Nhà phát triển
+素材	Tài nguyên
+地图编辑	Chỉnh sửa bản đồ
+编辑器	Trình chỉnh sửa
+作品	Tác phẩm
+发布	Đăng tải
+上架	Đưa lên kệ
+审核	Kiểm duyệt
+主站	Trang chính
+站	trạm
+
+# ---- Tu vung mo rong: game, giao dien, kham pha va loi he thong
+开始冒险	Bắt đầu phiêu lưu
+继续冒险	Tiếp tục phiêu lưu
+新建存档	Tạo dữ liệu lưu mới
+读取存档	Tải dữ liệu đã lưu
+保存进度	Lưu tiến trình
+自动保存	Tự động lưu
+加载失败	Tải thất bại
+连接失败	Kết nối thất bại
+网络连接失败	Kết nối mạng thất bại
+请重试	Vui lòng thử lại
+确认退出	Xác nhận thoát
+返回主菜单	Quay về menu chính
+设置成功	Cài đặt thành công
+设置失败	Cài đặt thất bại
+已完成	Đã hoàn thành
+未完成	Chưa hoàn thành
+已解锁	Đã mở khóa
+未解锁	Chưa mở khóa
+新手教程	Hướng dẫn tân thủ
+跳过教程	Bỏ qua hướng dẫn
+操作说明	Hướng dẫn thao tác
+按下	Ấn
+长按	Nhấn giữ
+点击	Nhấp
+拖动	Kéo
+滑动	Vuốt
+向上	Lên trên
+向下	Xuống dưới
+向左	Sang trái
+向右	Sang phải
+移动	Di chuyển
+冲刺	Lao nhanh
+跳跃	Nhảy
+二段跳	Nhảy kép
+闪避	Né tránh
+翻滚	Lộn né
+蹲下	Ngồi xổm
+奔跑	Chạy
+行走	Đi bộ
+攻击目标	Mục tiêu tấn công
+锁定目标	Khóa mục tiêu
+切换目标	Đổi mục tiêu
+普通攻击	Tấn công thường
+重攻击	Tấn công mạnh
+特殊攻击	Tấn công đặc biệt
+连续攻击	Tấn công liên hoàn
+远程攻击	Tấn công tầm xa
+近战	Tầm gần
+远程	Tầm xa
+技能冷却	Hồi chiêu kỹ năng
+冷却时间	Thời gian hồi chiêu
+技能点	Điểm kỹ năng
+天赋	Thiên phú
+天赋树	Cây thiên phú
+被动技能	Kỹ năng bị động
+主动技能	Kỹ năng chủ động
+终极技能	Kỹ năng tối thượng
+能量	Năng lượng
+法力	Pháp lực
+耐力	Thể lực
+护盾	Khiên
+护甲	Giáp
+生命上限	Giới hạn sinh lực
+恢复生命	Hồi phục sinh lực
+生命恢复	Hồi phục sinh lực
+治疗	Trị liệu
+死亡	Tử vong
+击败	Đánh bại
+消灭	Tiêu diệt
+受到伤害	Nhận sát thương
+造成伤害	Gây sát thương
+伤害加成	Tăng sát thương
+暴击率	Tỷ lệ chí mạng
+暴击伤害	Sát thương chí mạng
+攻击速度	Tốc độ tấn công
+移动速度	Tốc độ di chuyển
+防御穿透	Xuyên giáp
+元素伤害	Sát thương nguyên tố
+火焰伤害	Sát thương lửa
+冰霜伤害	Sát thương băng
+雷电伤害	Sát thương sét
+毒素伤害	Sát thương độc
+抗性	Kháng
+火焰抗性	Kháng lửa
+冰霜抗性	Kháng băng
+雷电抗性	Kháng sét
+毒素抗性	Kháng độc
+稀有	Hiếm
+优秀	Ưu tú
+精良	Tinh xảo
+史诗	Sử thi
+传说	Truyền thuyết
+神话	Thần thoại
+品质	Phẩm chất
+进化	Tiến hóa
+突破	Đột phá
+制作	Chế tạo
+锻造	Rèn
+分解	Phân giải
+附魔	Phù phép
+镶嵌	Khảm
+装备等级	Cấp trang bị
+装备耐久	Độ bền trang bị
+武器等级	Cấp vũ khí
+头盔	Mũ giáp
+胸甲	Giáp ngực
+护腿	Giáp chân
+靴子	Giày
+项链	Dây chuyền
+戒指	Nhẫn
+饰品	Trang sức
+材料	Vật liệu
+消耗品	Vật phẩm tiêu hao
+药水	Bình thuốc
+生命药水	Bình hồi máu
+魔法药水	Bình hồi phép
+复活币	Xu hồi sinh
+钥匙	Chìa khóa
+宝箱已开启	Rương đã mở
+开启宝箱	Mở rương
+掉落物	Vật phẩm rơi
+战利品	Chiến lợi phẩm
+拾取	Nhặt
+全部拾取	Nhặt tất cả
+丢弃	Vứt bỏ
+价格过高	Giá quá cao
+金币不足	Không đủ vàng
+材料不足	Không đủ vật liệu
+背包已满	Túi đồ đã đầy
+仓库	Kho
+仓库已满	Kho đã đầy
+任务追踪	Theo dõi nhiệm vụ
+任务奖励	Phần thưởng nhiệm vụ
+领取奖励	Nhận thưởng
+未领取	Chưa nhận
+每日签到	Điểm danh hằng ngày
+成就	Thành tựu
+成就点	Điểm thành tựu
+排名	Xếp hạng
+赛季	Mùa giải
+赛季奖励	Thưởng mùa giải
+匹配中	Đang ghép trận
+匹配成功	Ghép trận thành công
+匹配失败	Ghép trận thất bại
+开始匹配	Bắt đầu ghép trận
+取消匹配	Hủy ghép trận
+准备就绪	Sẵn sàng
+等待玩家	Đang chờ người chơi
+队伍	Đội
+组队	Lập đội
+邀请好友	Mời bạn bè
+加入队伍	Tham gia đội
+离开队伍	Rời đội
+队长	Đội trưởng
+队友	Đồng đội
+敌人	Kẻ địch
+盟友	Đồng minh
+中立	Trung lập
+精英怪	Quái tinh anh
+普通怪	Quái thường
+野怪	Quái rừng
+召唤	triệu hồi
+召唤物	Sinh vật triệu hồi
+宠物	Thú cưng
+坐骑	Thú cưỡi
+驯服	Thuần hóa
+捕捉	Bắt giữ
+孵化	Ấp nở
+进食	Ăn
+饥饿	Đói
+口渴	Khát
+睡眠	Ngủ
+休息	Nghỉ ngơi
+营地	Trại
+世界地图	Bản đồ thế giới
+小地图	Bản đồ nhỏ
+当前位置	Vị trí hiện tại
+目的地	Điểm đến
+传送	Dịch chuyển
+快速旅行	Dịch chuyển nhanh
+传送点	Điểm dịch chuyển
+探索	Khám phá
+发现	Phát hiện
+收集	Thu thập
+采集	Khai thác
+挖掘	Đào
+砍伐	Đốn cây
+钓鱼	Câu cá
+游泳	Bơi
+潜水	Lặn
+晴天	Trời nắng
+下雨	Trời mưa
+暴风雨	Bão
+白天	Ban ngày
+夜晚	Ban đêm
+日出	Bình minh
+日落	Hoàng hôn
+春天	Mùa xuân
+夏天	Mùa hè
+秋天	Mùa thu
+冬天	Mùa đông
+森林	Rừng
+草原	Đồng cỏ
+沙漠	Sa mạc
+雪山	Núi tuyết
+洞穴	Hang động
+地下城	Hầm ngục
+遗迹	Di tích
+村庄	Làng
+城市	Thành phố
+海洋	Đại dương
+河流	Sông
+湖泊	Hồ
+瀑布	Thác nước
+火山	Núi lửa
+岛屿	Hòn đảo
+危险区域	Khu vực nguy hiểm
+安全区	Vùng an toàn
+检查点	Điểm kiểm tra
+复活点	Điểm hồi sinh
+存档点	Điểm lưu
+剧情	Cốt truyện
+主线	Chính tuyến
+支线	Nhiệm vụ phụ
+对话	Hội thoại
+选择对话	Chọn câu thoại
+跳过对话	Bỏ qua hội thoại
+下一段	Tiếp theo
+上一段	Trước đó
+章节完成	Hoàn thành chương
+新章节	Chương mới
+角色信息	Thông tin nhân vật
+角色等级	Cấp nhân vật
+外观	Ngoại hình
+皮肤	Trang phục
+自定义	Tùy chỉnh
+背包容量	Sức chứa túi đồ
+使用	Sử dụng
+卸下	Tháo ra
+替换	Thay thế
+比较	So sánh
+筛选	Lọc
+排序	Sắp xếp
+按名称排序	Sắp xếp theo tên
+按等级排序	Sắp xếp theo cấp
+按稀有度排序	Sắp xếp theo độ hiếm
+显示	Show
+隐藏	Ẩn
+亮度	Độ sáng
+字幕	Phụ đề
+语言设置	Cài đặt ngôn ngữ
+英文	Tiếng Anh
+文本速度	Tốc độ chữ
+鼠标灵敏度	Độ nhạy chuột
+镜头灵敏度	Độ nhạy camera
+垂直灵敏度	Độ nhạy dọc
+水平灵敏度	Độ nhạy ngang
+反转视角	Đảo ngược góc nhìn
+辅助瞄准	Hỗ trợ ngắm
+画面质量	Chất lượng hình ảnh
+特效	Hiệu ứng
+阴影	Đổ bóng
+抗锯齿	Khử răng cưa
+帧率	Tốc độ khung hình
+垂直同步	Đồng bộ dọc
+中	Trung bình
+极高	Rất cao
+已启用	Đã bật
+已禁用	Đã tắt
+需要重启	Cần khởi động lại
+应用更改	Áp dụng thay đổi
+恢复默认	Khôi phục mặc định
+隐身	Ẩn thân
+无敌	Bất tử
+任务失败	Nhiệm vụ thất bại
+任务完成	Nhiệm vụ hoàn thành
+挑战成功	Thử thách thành công
+挑战失败	Thử thách thất bại
+波次	Làn
+第几波	Làn thứ
+剩余时间	Thời gian còn lại
+倒计时	Đếm ngược
+击杀	Hạ gục
+助攻	Hỗ trợ
+平局	Hòa
+退出房间	Rời phòng
+创建房间	Tạo phòng
+加入房间	Vào phòng
+房间已满	Phòng đã đầy
+观战	Xem trận
+举报	Báo cáo
+屏蔽	Chặn
+解除屏蔽	Bỏ chặn
+聊天频道	Kênh trò chuyện
+发送消息	Gửi tin nhắn
+系统消息	Tin nhắn hệ thống
+好友申请	Lời mời kết bạn
+接受	Chấp nhận
+在线	Trực tuyến
+离线	Ngoại tuyến
+忙碌	Đang bận
+操作失败	Thao tác thất bại
+操作成功	Thao tác thành công
+没有权限	Không có quyền
+权限不足	Không đủ quyền
+内容已更新	Nội dung đã cập nhật
+新内容	Nội dung mới
+版本更新	Cập nhật phiên bản
+更新完成	Cập nhật hoàn tất
+更新失败	Cập nhật thất bại
+下载中	Đang tải xuống
+上传中	Đang tải lên
+正在连接	Đang kết nối
+连接成功	Kết nối thành công
+连接超时	Kết nối quá thời gian
+服务器维护	Máy chủ bảo trì
+服务器繁忙	Máy chủ bận
+服务器错误	Lỗi máy chủ
+未知错误	Lỗi không xác định
+请检查网络	Vui lòng kiểm tra mạng
+重新登录	Đăng nhập lại
+账号已存在	Tài khoản đã tồn tại
+账号不存在	Tài khoản không tồn tại
+密码错误	Sai mật khẩu
+登录成功	Đăng nhập thành công
+登录失败	Đăng nhập thất bại
+注册成功	Đăng ký thành công
+注册失败	Đăng ký thất bại
+请输入用户名	Vui lòng nhập tên người dùng
+请输入密码	Vui lòng nhập mật khẩu
+不能为空	Không được để trống
+超出范围	Vượt quá phạm vi
+无效	Không hợp lệ
+有效	Hợp lệ
+必需	Bắt buộc
+可选	Tùy chọn
+未知	Không xác định
+其他	Khác
+没有更多内容	Không còn nội dung
+加载更多	Tải thêm
+返回顶部	Về đầu trang
+确认删除	Xác nhận xóa
+确定要继续吗	Bạn có chắc muốn tiếp tục không
+此操作无法撤销	Thao tác này không thể hoàn tác
+请输入	Vui lòng nhập
+搜索结果	Kết quả tìm kiếm
+没有结果	Không có kết quả
+暂无数据	Chưa có dữ liệu
+排序方式	Cách sắp xếp
+筛选条件	Điều kiện lọc
+热门推荐	Đề xuất phổ biến
+最新发布	Mới đăng
+发布时间	Thời gian đăng
+作者信息	Thông tin tác giả
+用户中心	Trung tâm người dùng
+个人资料	Hồ sơ cá nhân
+修改资料	Sửa hồ sơ
+修改密码	Đổi mật khẩu
+绑定	B liên kết
+解绑	Hủy liên kết
+安全设置	Cài đặt bảo mật
+通知设置	Cài đặt thông báo
+隐私设置	Cài đặt riêng tư
+主题	Chủ đề
+深色模式	Chế độ tối
+浅色模式	Chế độ sáng
