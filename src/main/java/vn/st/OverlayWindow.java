@@ -118,7 +118,7 @@ public class OverlayWindow extends JWindow {
     private void paintBadge(Graphics2D g) {
         String t = badgeText;
         if (t.isEmpty()) return;
-        g.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        g.setFont(fontFor(t, Font.BOLD));
         FontMetrics fm = g.getFontMetrics();
         int w = Math.min(getWidth(), fm.stringWidth(t) + 28), h = 18;
         int y = offY > 0 ? 1 : 2;                   // khong con cho phia tren thi ve de len goc tren trai
@@ -201,10 +201,19 @@ public class OverlayWindow extends JWindow {
         return new ArrayList<>(items);
     }
 
+    /** Font co du glyph cho chuoi: Segoe UI -> Microsoft YaHei UI -> font logic Dialog (tu fallback CJK). Tranh o vuong □. */
+    static Font fontFor(String text, int style) {
+        for (String name : new String[]{"Segoe UI", "Microsoft YaHei UI", "Microsoft JhengHei UI"}) {
+            Font f = new Font(name, style, 12);
+            if (f.getFamily().equalsIgnoreCase(name) && f.canDisplayUpTo(text) == -1) return f;
+        }
+        return new Font(Font.DIALOG, style, 12);   // font logic: Java tu ghep font du phong cho tung ky tu
+    }
+
     // ----------------------------------------------------------------------- ve
     private Layout layout(Graphics2D g, Item it) {
         if (it.layout != null && it.layoutScale == cfg.fontScale + getWidth()) return (Layout) it.layout;
-        Font base = new Font("Segoe UI", Font.PLAIN, 12);
+        Font base = fontFor(it.dst, Font.PLAIN);
         double s0 = Math.max(10, Math.min(64, it.lh * 0.92 * cfg.fontScale));
         int availR = Math.max(it.w, getWidth() - it.x - 2);
         int[] widths = {it.w, Math.min(availR, (int) (it.w * 1.35))};

@@ -31,10 +31,11 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import cv2
 import numpy as np
 
+import build_dict
 import offline
 
 CFG = {
-    "provider": "auto",            # auto | offline | google | openai | echo (de kiem thu)
+    "provider": "offline",         # offline (mac dinh, khong mang) | auto (offline + Google khi do phu thap) | google | openai | echo (kiem thu)
     "openaiUrl": "http://localhost:11434/v1",
     "openaiKey": "",
     "openaiModel": "qwen2.5:7b",
@@ -342,10 +343,8 @@ class Translator:
                 continue
             tr, cov = offline.translate(t)
             fallback[i] = (tr, cov)
-            if prov == "offline":
-                out[i] = tr
-            elif prov == "auto" and cov >= 0.999 and offline.cjk_count(t) <= 8 and "\u7684" not in t:
-                out[i] = tr                      # nhan ngan hoan toan co trong tu dien -> dich offline luon
+            if prov == "offline" or (prov == "auto" and cov >= 0.9):
+                out[i] = tr                      # tu dien phu du -> dich offline, khong dung mang
             else:
                 need.append(i)
         if need:
@@ -353,7 +352,7 @@ class Translator:
             try:
                 res = self._openai(src) if prov == "openai" else self.google.translate_many(src)
             except RateLimited as e:
-                self.last_error = "Google đang giới hạn yêu cầu, tạm dùng từ điển offline (thử lại sau %d giây)" % int(e.wait)
+                self.last_error = "Google giới hạn yêu cầu, dùng từ điển offline (thử lại sau %d giây)" % int(e.wait)
                 res = [None] * len(need)
             except Exception as e:
                 self.last_error = "Dịch online lỗi (%s), tạm dùng từ điển offline" % type(e).__name__
@@ -365,9 +364,11 @@ class Translator:
                     self._put(texts[i], r)
                     rows.append((self._tag(), texts[i], r))
             self._persist(rows)
-            for i in need:                       # du phong: tu dien neu phu >= 85% (khong luu cache)
-                if out[i] is None and i in fallback and fallback[i][1] >= 0.85:
+            for i in need:                       # du phong: tu dien (khong luu cache)
+                if out[i] is None and i in fallback and fallback[i][1] >= 0.5:
                     out[i] = fallback[i][0]
+            if self.last_error and all(out[i] for i in need):
+                self.last_error = None           # da dich du bang tu dien -> khong bao loi do
         return out
 
     # ---- API kieu OpenAI / Ollama (giu nhu truoc)
@@ -473,6 +474,8 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         if self.path.startswith("/health"):
             self._send({"ok": True, "ready": ENGINE is not None, "dict": offline.size()})
+        elif self.path.startswith("/dict_status"):
+            self._send(dict(DICT_JOB, size=offline.size()[2]))
         else:
             self._send({"error": "not found"}, 404)
 
@@ -484,6 +487,9 @@ class Handler(BaseHTTPRequestHandler):
                 CFG.update(json.loads(body.decode("utf-8")))
                 OCR_CACHE.clear()
                 self._send({"ok": True})
+            elif self.path.startswith("/build_dict"):
+                start_dict_build()
+                self._send({"ok": True})
             elif self.path.startswith("/ocr"):
                 img = cv2.imdecode(np.frombuffer(body, np.uint8), cv2.IMREAD_COLOR)
                 if img is None:
@@ -494,6 +500,27 @@ class Handler(BaseHTTPRequestHandler):
                 self._send({"error": "not found"}, 404)
         except Exception as e:
             self._send({"items": [], "error": "%s: %s" % (type(e).__name__, e)}, 500)
+
+
+DICT_JOB = {"state": "idle", "msg": ""}
+
+
+def start_dict_build():
+    """Tai + dung tu dien lon trong luong nen (goi tu giao dien khi chua co dict_big.db)."""
+    if DICT_JOB["state"] == "running":
+        return
+
+    def run():
+        try:
+            n = build_dict.build(os.path.join(DATA_DIR, "dict_big.db"), say=lambda m: DICT_JOB.update(msg=m))
+            offline.load()
+            OCR_CACHE.clear()
+            DICT_JOB.update(state="done", msg="đã nạp %s cụm" % format(n, ","))
+        except BaseException as e:
+            DICT_JOB.update(state="error", msg="không tải được (%s). Kiểm tra mạng rồi chạy build_dict.bat" % e)
+
+    DICT_JOB.update(state="running", msg="đang chuẩn bị…")
+    threading.Thread(target=run, daemon=True, name="dict-build").start()
 
 
 def watch_parent():

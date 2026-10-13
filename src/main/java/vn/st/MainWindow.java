@@ -133,7 +133,16 @@ public class MainWindow extends JFrame {
                     throw new IllegalStateException("Backend Python không khởi động được. Log cuối: " + backend.lastLog());
                 backend.pushConfig();
                 ready = true;
+                final int big = backend.bigDictSize();
+                AppLog.info("Tu dien lon: " + big + " cum");
                 SwingUtilities.invokeLater(() -> {
+                    if (big == 0) {
+                        lErr.setText("Chưa có từ điển lớn: đang tự tải (cần mạng, ~45 MB, chỉ một lần)…");
+                        lErr.setForeground(new Color(0xB36B00));
+                        autoBuildDict();
+                    } else if (big > 0) {
+                        lTr.setText("Từ điển offline: " + String.format("%,d", big) + " cụm + từ điển riêng");
+                    }
                     lState.setText(region == null ? "Sẵn sàng. Bấm \"Chọn vùng\", rồi \"Bắt đầu dịch\"."
                             : "Sẵn sàng. Bấm \"Bắt đầu dịch\" (hoặc \"Chọn vùng\" để đổi vùng).");
                     refreshButtons();
@@ -149,6 +158,35 @@ public class MainWindow extends JFrame {
                 restarting.set(false);
             }
         }, "backend-start").start();
+    }
+
+    /** Chua co dict_big.db -> backend tu tai/dung; poll tien do, xong thi dich lai vung dang chay. */
+    private void autoBuildDict() {
+        new Thread(() -> {
+            try { backend.startDictBuild(); } catch (Exception e) { AppLog.error("startDictBuild", e); }
+        }, "dict-start").start();
+        final Timer[] t = new Timer[1];
+        t[0] = new Timer(1500, ev -> new Thread(() -> {
+            try {
+                java.util.Map<?, ?> m = new com.google.gson.Gson().fromJson(backend.dictStatus(), java.util.Map.class);
+                String st = String.valueOf(m.get("state")), msg = String.valueOf(m.get("msg"));
+                SwingUtilities.invokeLater(() -> {
+                    lTr.setText("Từ điển lớn: " + msg);
+                    if ("done".equals(st)) {
+                        t[0].stop();
+                        lErr.setText(" ");
+                        lErr.setForeground(Color.DARK_GRAY);
+                        if (pipeline.isRunning()) pipeline.translateNow();     // dich lai bang tu dien moi
+                    } else if ("error".equals(st)) {
+                        t[0].stop();
+                        lErr.setText("Từ điển lớn: " + msg);
+                        lErr.setForeground(new Color(0xB00020));
+                    }
+                });
+            } catch (Exception ignored) {
+            }
+        }, "dict-poll").start());
+        t[0].start();
     }
 
     private void registerHotkeys() {

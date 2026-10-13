@@ -123,6 +123,30 @@ public class PythonBackend {
         t.start();
     }
 
+    /** So muc tu dien lon dang nap o backend (0 = chua dung build_dict). -1 neu khong doc duoc. */
+    public int bigDictSize() {
+        try {
+            HttpResponse<String> r = http.send(HttpRequest.newBuilder(URI.create(base() + "/health"))
+                    .timeout(Duration.ofSeconds(3)).build(), HttpResponse.BodyHandlers.ofString());
+            java.util.regex.Matcher m = java.util.regex.Pattern.compile("\"dict\": \\[(\\d+), (\\d+), (\\d+)\\]").matcher(r.body());
+            return m.find() ? Integer.parseInt(m.group(3)) : -1;
+        } catch (Exception e) {
+            return -1;
+        }
+    }
+
+    /** Yeu cau backend tu tai va dung tu dien lon (chay nen). */
+    public void startDictBuild() throws Exception {
+        http.send(HttpRequest.newBuilder(URI.create(base() + "/build_dict"))
+                .timeout(Duration.ofSeconds(5)).POST(HttpRequest.BodyPublishers.noBody()).build(), HttpResponse.BodyHandlers.ofString());
+    }
+
+    /** JSON {"state": idle|running|done|error, "msg": ..., "size": N}. */
+    public String dictStatus() throws Exception {
+        return http.send(HttpRequest.newBuilder(URI.create(base() + "/dict_status"))
+                .timeout(Duration.ofSeconds(5)).build(), HttpResponse.BodyHandlers.ofString()).body();
+    }
+
     public boolean waitReady(int seconds) {
         long end = System.currentTimeMillis() + seconds * 1000L;
         while (System.currentTimeMillis() < end) {

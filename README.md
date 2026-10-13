@@ -67,21 +67,26 @@ Chế độ "Tự động dịch" tắt → chỉ dịch khi bấm **Dịch ngay
 
 **Tự phục hồi:** nếu OCR/dịch lỗi (mất mạng, Google chặn, backend chậm), app tự thử lại sau 2 → 4 → 8 → 15 giây ngay cả khi màn hình đứng yên; cứ 12 giây quét lại toàn vùng một lần để bắt các thay đổi nhỏ; nếu tiến trình Python chết, cửa sổ điều khiển tự khởi động lại nó. Mọi lỗi được ghi vào `%USERPROFILE%\.screen-translator\app.log` (nút **Mở file log**).
 
-## Dịch thuật: từ điển offline + Google ít gọi (hết lỗi TooManyRequests)
+## Dịch thuật offline bằng từ điển lớn (không cần Google)
 
-Thứ tự xử lý mỗi đoạn chữ (Cài đặt → "Dịch vụ dịch"):
+Mặc định app dịch **hoàn toàn offline**, không gọi mạng nên không còn lỗi TooManyRequests.
 
-1. **Cache vĩnh viễn** (`%USERPROFILE%\.screen-translator\cache.db`): câu đã dịch online một lần thì lần sau không gọi mạng nữa.
-2. **Từ điển offline** (`python/dict_zh_vi.tsv`, hơn 400 mục: giao diện, game, web, từ thông dụng; hiểu cả chữ phồn thể): dịch tức thì, không cần mạng.
-3. **Google Dịch** chỉ dùng cho câu dài/chưa có trong từ điển, **gộp cả màn hình vào 1 request**, cách nhau ≥ 0,6 giây. Bị chặn (429) thì app **nghỉ 20 giây → 40 → … tối đa 10 phút** và tạm dùng từ điển, không dội thêm request.
+**Từ điển** (ưu tiên từ cao xuống thấp; khớp **cụm dài nhất** trước):
+1. `%USERPROFILE%\.screen-translator\glossary.tsv` — từ của riêng bạn (`chữ Trung<TAB>tiếng Việt`, mỗi dòng một mục; ví dụ tên nhân vật, kỹ năng game). Sửa file là có hiệu lực ngay, không cần khởi động lại.
+2. `python/dict_zh_vi.tsv` — từ điển chọn lọc đi kèm (~400 mục: nhãn giao diện, game, web, từ thông dụng, viết tiếng Việt hiện đại).
+3. `%USERPROFILE%\.screen-translator\dict_big.db` — **từ điển lớn ~1,19 triệu cụm** + 90 nghìn tên riêng + Hán Việt từng chữ + 219 luật đảo trật tự. **Tự tải khi mở app lần đầu** nếu chưa có (cần mạng một lần, ~45 MB tải về, ~46 MB trên đĩa; trạng thái hiện trong cửa sổ điều khiển và bản dịch tự cập nhật khi xong). Cũng có thể chạy tay `build_dict.bat` hoặc để `setup.bat` làm. Dịch một câu mất khoảng 1–5 ms.
 
-Các chế độ: `auto` (mặc định, như trên) · `offline` (chỉ từ điển, không bao giờ gọi mạng) · `google` · `openai` (Ollama/LM Studio/OpenAI).
+**Lỗi ô vuông □ trên bản dịch:** do font overlay không có glyph tiếng Trung khi còn chữ Trung chưa dịch được. Đã sửa: overlay tự chọn font có đủ glyph (Segoe UI → Microsoft YaHei UI → font logic Dialog), nên chữ Trung sót lại (nếu có) hiển thị đúng thay vì □.
 
-**Thêm từ của riêng bạn:** tạo `%USERPROFILE%\.screen-translator\glossary.tsv`, mỗi dòng `chữ Trung<TAB>tiếng Việt` (ví dụ tên nhân vật, kỹ năng game). File này ghi đè từ điển gốc và được nạp lại tự động khi lưu, không cần khởi động lại. Giá trị để trống nghĩa là bỏ qua từ đó. Có thể sửa trực tiếp `python/dict_zh_vi.tsv` để mở rộng từ điển gốc.
+Chữ phồn thể được đổi sang giản thể để tra. Từ lạ được đọc theo âm Hán Việt (2–4 chữ liền nhau → viết hoa như tên riêng). Có thêm xử lý "我的书 → sách của tôi" và đổi đại từ cổ của VietPhrase (ngươi → bạn, ta → tôi…). Mở app sẽ hiện "Từ điển offline: N cụm"; nếu thấy cảnh báo "Chưa có từ điển lớn" nghĩa là app đang tải, hoặc tải lỗi do không có mạng — khi đó dùng `build_dict.bat --from-dir <thư mục>` với 4 file `Vietphrase.txt, Names.txt, HanViet.txt, ZZLuatNhan.txt`.
 
-**Giới hạn thật của chế độ offline:** từ điển dịch từng cụm nên rất tốt với nhãn/nút/menu/tên riêng, nhưng câu dài bị sai trật tự từ (ví dụ cấu trúc "A 的 B"). Vì vậy ở `auto`, câu dài vẫn gọi Google (ít, gộp, có cache); muốn hoàn toàn không dùng Google cho câu dài thì dùng `openai` với mô hình chạy cục bộ (Ollama), hoặc chấp nhận `offline`.
+**Nguồn dữ liệu & giấy phép:** từ điển lớn lấy từ bộ VietPhrase do cộng đồng QuickTranslator chia sẻ (repo công khai `hoangtuantk/Vietphrase` trên GitHub). Bộ này **không có giấy phép rõ ràng**, nên mình không đóng gói sẵn mà để máy bạn tự tải về dùng cá nhân; đừng phát hành lại. Từ điển chọn lọc và công cụ là của dự án này.
 
-**Nhanh hơn:** ảnh vùng dịch không đổi (quét lại định kỳ, thử lại sau lỗi) thì dùng lại kết quả OCR, không OCR lại.
+**Chất lượng — nói thẳng:** kiểu dịch của VietPhrase/QuickTranslator là khớp cụm theo trật tự tiếng Trung, đọc hiểu được nhưng chưa trôi chảy ("Sách của tôi nhìn rất đẹp", "Mạng kết nối thất bại, xin kiểm tra mạng cài đặt…"). Tốt nhất với nhãn/nút/menu/thông báo hệ thống/hội thoại game; câu văn dài và cấu trúc "A 的 B" còn sai trật tự từ. Gặp từ/tên dịch chưa ưng, thêm vào `glossary.tsv` là xong và sẽ luôn được ưu tiên.
+
+**Các chế độ** (Cài đặt → "Dịch vụ"): `offline` (mặc định) · `auto` (offline, chỉ gọi Google khi độ phủ từ điển thấp; gộp 1 request, cách quãng, bị 429 thì tự nghỉ) · `google` · `openai` (Ollama/LM Studio/OpenAI để dịch câu dài tự nhiên hơn). Bản dịch online được lưu cache `cache.db` để lần sau không gọi lại.
+
+**Nhanh hơn:** vùng ảnh không đổi (quét lại định kỳ, thử lại sau lỗi) dùng lại kết quả OCR, không OCR lại.
 
 ## Cách hệ thống tránh dịch sai vị trí
 
