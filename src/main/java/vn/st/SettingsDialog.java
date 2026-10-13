@@ -9,7 +9,7 @@ public class SettingsDialog extends JDialog {
     private int row = 0;
     private final JPanel form = new JPanel(new GridBagLayout());
 
-    private final JComboBox<String> provider = new JComboBox<>(new String[]{"google", "openai"});
+    private final JComboBox<String> provider = new JComboBox<>(new String[]{"auto", "offline", "google", "openai"});
     private final JTextField url = new JTextField(24), model = new JTextField(24);
     private final JPasswordField key = new JPasswordField(24);
     private final JComboBox<String> mode = new JComboBox<>(new String[]{"speed", "accuracy"});
@@ -69,7 +69,7 @@ public class SettingsDialog extends JDialog {
         hk4.setSelectedItem(cfg.hkStop);
         python.setText(cfg.pythonExe);
 
-        add("Dịch vụ dịch:", provider);
+        add("Dịch vụ (auto = từ điển + Google ít gọi; offline = chỉ từ điển):", provider);
         add("API URL (openai/Ollama):", url);
         add("Model:", model);
         add("API key:", key);

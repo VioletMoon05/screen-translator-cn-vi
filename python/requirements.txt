@@ -3,4 +3,4 @@ onnxruntime>=1.17,<2
 numpy>=1.26
 opencv-python-headless>=4.9
 pillow>=10.0
-deep-translator==1.11.4
+opencc-python-reimplemented==0.1.7

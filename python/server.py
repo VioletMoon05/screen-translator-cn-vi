@@ -12,6 +12,7 @@ Giao tiep: HTTP JSON chi tren 127.0.0.1.
 """
 import argparse
 import base64
+import hashlib
 import json
 import os
 import re
@@ -21,6 +22,7 @@ import sys
 import threading
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 from collections import OrderedDict
 from concurrent.futures import ThreadPoolExecutor
@@ -29,8 +31,10 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import cv2
 import numpy as np
 
+import offline
+
 CFG = {
-    "provider": "google",          # google | openai | echo (de kiem thu)
+    "provider": "auto",            # auto | offline | google | openai | echo (de kiem thu)
     "openaiUrl": "http://localhost:11434/v1",
     "openaiKey": "",
     "openaiModel": "qwen2.5:7b",
@@ -188,75 +192,185 @@ def analyze(img, x0, y0, x1, y1):
 
 
 # ------------------------------------------------------------------- dich thuat
-class Translator:
+class RateLimited(Exception):
+    def __init__(self, wait):
+        super().__init__("Google dang gioi han yeu cau, thu lai sau %ds" % int(wait))
+        self.wait = wait
+
+
+class GoogleFree:
+    """Google Dich (endpoint gtx) nhung 'lich su': gop nhieu doan vao 1 request, cach nhau >= MIN_GAP giay,
+    gap 429/503 thi NGHI (cooldown tang dan 20s -> 10 phut) thay vi dap them request."""
+    URL = "https://translate.googleapis.com/translate_a/single"
+    MIN_GAP = 0.6
+    MAX_CHARS = 1500
+    MAX_LINES = 25
+
     def __init__(self):
-        self.cache = OrderedDict()
         self.lock = threading.Lock()
-        self.pool = ThreadPoolExecutor(max_workers=6)
+        self.last = 0.0
+        self.cool_until = 0.0
+        self.cool_step = 20
+
+    def remaining(self):
+        return max(0.0, self.cool_until - time.time())
+
+    def _post(self, text):                       # tach rieng de co the thay khi kiem thu
+        data = urllib.parse.urlencode({"client": "gtx", "sl": "zh-CN", "tl": "vi", "dt": "t", "q": text}).encode("utf-8")
+        req = urllib.request.Request(self.URL, data=data, headers={
+            "User-Agent": "Mozilla/5.0", "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"})
+        with urllib.request.urlopen(req, timeout=12) as r:
+            return json.loads(r.read().decode("utf-8"))
+
+    def _request(self, text):
+        with self.lock:                          # tuan tu + cach quang: khong bao gio bung no nhieu request
+            wait = self.last + self.MIN_GAP - time.time()
+            if wait > 0:
+                time.sleep(wait)
+            self.last = time.time()
+        try:
+            j = self._post(text)
+        except urllib.error.HTTPError as e:
+            if e.code in (429, 503):
+                self.cool_until = time.time() + self.cool_step
+                self.cool_step = min(self.cool_step * 2, 600)
+                raise RateLimited(self.remaining())
+            raise
+        self.cool_step = 20
+        return "".join(seg[0] for seg in j[0] if seg and seg[0])
+
+    def translate_many(self, texts):
+        if self.remaining() > 0:
+            raise RateLimited(self.remaining())
+        clean = [re.sub(r"\s+", " ", t).strip() for t in texts]
+        res = [None] * len(texts)
+        batches, cur, chars = [], [], 0
+        for i, t in enumerate(clean):
+            if cur and (chars + len(t) > self.MAX_CHARS or len(cur) >= self.MAX_LINES):
+                batches.append(cur)
+                cur, chars = [], 0
+            cur.append(i)
+            chars += len(t) + 1
+        if cur:
+            batches.append(cur)
+        for b in batches:
+            out = self._request("\n".join(clean[i] for i in b))
+            lines = [x.strip() for x in out.strip().split("\n")]
+            if len(lines) == len(b):
+                for i, l in zip(b, lines):
+                    res[i] = l or None
+            else:                                # Google gop/tach dong -> dich rieng (toi da 6 request them)
+                for i in b[:6]:
+                    res[i] = self._request(clean[i]).strip() or None
+        return res
+
+
+class Translator:
+    """Thu tu: cache -> glossary/tu dien (exact) -> tu dien (cum ngan) -> online (gop, gioi han) -> tu dien (du phong)."""
+
+    def __init__(self):
+        self.cache = OrderedDict()               # ban dich ONLINE da hoc (luu ca ra dia)
+        self.lock = threading.Lock()
+        self.pool = ThreadPoolExecutor(max_workers=4)
         self.last_error = None
+        self.google = GoogleFree()
+        self.db_path = None
 
-    def _key(self, t):
-        p = CFG["provider"]
-        return (p, CFG["openaiModel"] if p == "openai" else "", t)
+    # ---- cache vinh vien (SQLite): dich mot lan, lan sau khong goi mang nua
+    def load_cache(self, data_dir):
+        self.db_path = os.path.join(data_dir, "cache.db")
+        try:
+            os.makedirs(data_dir, exist_ok=True)
+            con = sqlite3.connect(self.db_path)
+            con.execute("CREATE TABLE IF NOT EXISTS cache(tag TEXT, src TEXT, dst TEXT, ts REAL, PRIMARY KEY(tag, src))")
+            for tag, src, dst in con.execute("SELECT tag, src, dst FROM cache ORDER BY ts DESC LIMIT 20000"):
+                self.cache[(tag, src)] = dst
+            con.close()
+        except Exception as e:
+            print("Khong nap duoc cache:", e, flush=True)
 
-    def _get(self, k):
+    def _persist(self, rows):
+        if not self.db_path or not rows:
+            return
+        try:
+            con = sqlite3.connect(self.db_path)
+            con.executemany("INSERT OR REPLACE INTO cache VALUES(?,?,?,?)", [(t, s, d, time.time()) for t, s, d in rows])
+            con.commit()
+            con.close()
+        except Exception:
+            pass
+
+    def _tag(self):
+        return "openai:" + CFG["openaiModel"] if CFG["provider"] == "openai" else "google"
+
+    def _get(self, t):
         with self.lock:
+            k = (self._tag(), t)
             v = self.cache.get(k)
             if v is not None:
                 self.cache.move_to_end(k)
             return v
 
-    def _put(self, k, v):
+    def _put(self, t, v):
         with self.lock:
-            self.cache[k] = v
-            while len(self.cache) > 5000:
+            self.cache[(self._tag(), t)] = v
+            while len(self.cache) > 20000:
                 self.cache.popitem(last=False)
 
+    # ---- chinh
     def translate(self, texts):
         self.last_error = None
-        out = [None] * len(texts)
-        todo = []
+        prov = CFG["provider"]
+        n = len(texts)
+        out = [None] * n
+        fallback = {}                            # i -> (ban dich tu dien, do phu)
+        need = []
         for i, t in enumerate(texts):
-            c = self._get(self._key(t))
+            e = offline.exact(t)                 # glossary cua ban + tu dien: luon uu tien, khong mat mang
+            if e:
+                out[i] = e
+                continue
+            if prov == "echo":
+                out[i] = "[VI] " + t
+                continue
+            c = self._get(t)
             if c is not None:
                 out[i] = c
+                continue
+            if prov == "openai":
+                need.append(i)
+                continue
+            tr, cov = offline.translate(t)
+            fallback[i] = (tr, cov)
+            if prov == "offline":
+                out[i] = tr
+            elif prov == "auto" and cov >= 0.999 and offline.cjk_count(t) <= 8 and "\u7684" not in t:
+                out[i] = tr                      # nhan ngan hoan toan co trong tu dien -> dich offline luon
             else:
-                todo.append(i)
-        if todo:
+                need.append(i)
+        if need:
+            src = [texts[i] for i in need]
             try:
-                res = self._call([texts[i] for i in todo])
-            except Exception as e:  # mang / API loi
-                self.last_error = "%s: %s" % (type(e).__name__, e)
-                res = [None] * len(todo)
-            for i, r in zip(todo, res):
+                res = self._openai(src) if prov == "openai" else self.google.translate_many(src)
+            except RateLimited as e:
+                self.last_error = "Google đang giới hạn yêu cầu, tạm dùng từ điển offline (thử lại sau %d giây)" % int(e.wait)
+                res = [None] * len(need)
+            except Exception as e:
+                self.last_error = "Dịch online lỗi (%s), tạm dùng từ điển offline" % type(e).__name__
+                res = [None] * len(need)
+            rows = []
+            for i, r in zip(need, res):
                 if r:
                     out[i] = r
-                    self._put(self._key(texts[i]), r)
+                    self._put(texts[i], r)
+                    rows.append((self._tag(), texts[i], r))
+            self._persist(rows)
+            for i in need:                       # du phong: tu dien neu phu >= 85% (khong luu cache)
+                if out[i] is None and i in fallback and fallback[i][1] >= 0.85:
+                    out[i] = fallback[i][0]
         return out
 
-    def _call(self, texts):
-        p = CFG["provider"]
-        if p == "echo":
-            return ["[VI] " + t for t in texts]
-        if p == "openai":
-            return self._openai(texts)
-        return self._google(texts)
-
-    def _google(self, texts):
-        from deep_translator import GoogleTranslator
-
-        def one(t):
-            err = None
-            for _ in range(2):
-                try:
-                    return GoogleTranslator(source="auto", target="vi").translate(t)
-                except Exception as e:
-                    err = e
-                    time.sleep(0.3)
-            self.last_error = "%s: %s" % (type(err).__name__, err)
-            return None
-        return list(self.pool.map(one, texts))
-
+    # ---- API kieu OpenAI / Ollama (giu nhu truoc)
     def _chat(self, system, user):
         url = CFG["openaiUrl"].rstrip("/") + "/chat/completions"
         body = json.dumps({
@@ -305,9 +419,19 @@ def save_history(rows):
 
 
 # ------------------------------------------------------------------- xu ly chinh
-def process(img):
+OCR_CACHE = OrderedDict()                        # md5(anh) -> cac dong OCR: quet lai/thu lai khong OCR lai
+
+
+def process(img, key=None):
     t0 = time.time()
-    lines = run_ocr(img)
+    lines = OCR_CACHE.get(key) if key else None
+    cached = lines is not None
+    if not cached:
+        lines = run_ocr(img)
+        if key:
+            OCR_CACHE[key] = lines
+            while len(OCR_CACHE) > 16:
+                OCR_CACHE.popitem(last=False)
     t1 = time.time()
     if CFG["mergeLines"]:
         blocks = merge_lines(lines)
@@ -326,7 +450,7 @@ def process(img):
         hist.append((b["text"], d))
     if CFG["saveHistory"] and hist:
         save_history(hist)
-    resp = dict(items=items, ocr_ms=int((t1 - t0) * 1000), tr_ms=int((t2 - t1) * 1000), blocks=len(blocks))
+    resp = dict(items=items, ocr_ms=int((t1 - t0) * 1000), tr_ms=int((t2 - t1) * 1000), blocks=len(blocks), cached=cached)
     if TR.last_error:
         resp["error"] = "Dịch lỗi: " + TR.last_error
     return resp
@@ -348,7 +472,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         if self.path.startswith("/health"):
-            self._send({"ok": True, "ready": ENGINE is not None})
+            self._send({"ok": True, "ready": ENGINE is not None, "dict": offline.size()})
         else:
             self._send({"error": "not found"}, 404)
 
@@ -358,13 +482,14 @@ class Handler(BaseHTTPRequestHandler):
         try:
             if self.path.startswith("/config"):
                 CFG.update(json.loads(body.decode("utf-8")))
+                OCR_CACHE.clear()
                 self._send({"ok": True})
             elif self.path.startswith("/ocr"):
                 img = cv2.imdecode(np.frombuffer(body, np.uint8), cv2.IMREAD_COLOR)
                 if img is None:
                     self._send({"items": [], "error": "Ảnh không hợp lệ"}, 400)
                 else:
-                    self._send(process(img))
+                    self._send(process(img, hashlib.md5(body).hexdigest()))
             else:
                 self._send({"error": "not found"}, 404)
         except Exception as e:
@@ -389,6 +514,8 @@ def main():
     ap.add_argument("--no-watch", action="store_true")
     a = ap.parse_args()
     DATA_DIR = a.data_dir
+    offline.load(DATA_DIR)
+    TR.load_cache(DATA_DIR)
     load_engine()
     if not a.no_watch:
         threading.Thread(target=watch_parent, daemon=True).start()

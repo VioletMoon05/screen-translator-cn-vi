@@ -67,17 +67,21 @@ Chế độ "Tự động dịch" tắt → chỉ dịch khi bấm **Dịch ngay
 
 **Tự phục hồi:** nếu OCR/dịch lỗi (mất mạng, Google chặn, backend chậm), app tự thử lại sau 2 → 4 → 8 → 15 giây ngay cả khi màn hình đứng yên; cứ 12 giây quét lại toàn vùng một lần để bắt các thay đổi nhỏ; nếu tiến trình Python chết, cửa sổ điều khiển tự khởi động lại nó. Mọi lỗi được ghi vào `%USERPROFILE%\.screen-translator\app.log` (nút **Mở file log**).
 
-## Cấu hình dịch thuật
+## Dịch thuật: từ điển offline + Google ít gọi (hết lỗi TooManyRequests)
 
-**A. Google (mặc định, không cần key).** Dùng thư viện `deep-translator` gọi endpoint web không chính thức của Google Dịch; có thể bị giới hạn/chặn nếu gọi quá nhiều. Chỉ gửi *văn bản OCR*, không gửi ảnh.
+Thứ tự xử lý mỗi đoạn chữ (Cài đặt → "Dịch vụ dịch"):
 
-**B. Dịch hoàn toàn cục bộ (Ollama / LM Studio / bất kỳ API tương thích OpenAI).** Cài Ollama, rồi:
-```bat
-ollama pull qwen2.5:7b
-```
-Cài đặt → Dịch vụ: `openai`, API URL `http://localhost:11434/v1`, Model `qwen2.5:7b`, API key để trống. Có thể dùng dịch vụ đám mây tương thích OpenAI bằng cách điền URL + key (key lưu mã hóa DPAPI trong `%USERPROFILE%\.screen-translator\config.json`, không nằm trong mã nguồn). Chất lượng/tốc độ phụ thuộc model và máy; hãy tự đo trên máy bạn.
+1. **Cache vĩnh viễn** (`%USERPROFILE%\.screen-translator\cache.db`): câu đã dịch online một lần thì lần sau không gọi mạng nữa.
+2. **Từ điển offline** (`python/dict_zh_vi.tsv`, hơn 400 mục: giao diện, game, web, từ thông dụng; hiểu cả chữ phồn thể): dịch tức thì, không cần mạng.
+3. **Google Dịch** chỉ dùng cho câu dài/chưa có trong từ điển, **gộp cả màn hình vào 1 request**, cách nhau ≥ 0,6 giây. Bị chặn (429) thì app **nghỉ 20 giây → 40 → … tối đa 10 phút** và tạm dùng từ điển, không dội thêm request.
 
-Bản dịch được cache theo văn bản nguồn (5000 mục) nên chữ lặp lại không gọi dịch lại.
+Các chế độ: `auto` (mặc định, như trên) · `offline` (chỉ từ điển, không bao giờ gọi mạng) · `google` · `openai` (Ollama/LM Studio/OpenAI).
+
+**Thêm từ của riêng bạn:** tạo `%USERPROFILE%\.screen-translator\glossary.tsv`, mỗi dòng `chữ Trung<TAB>tiếng Việt` (ví dụ tên nhân vật, kỹ năng game). File này ghi đè từ điển gốc và được nạp lại tự động khi lưu, không cần khởi động lại. Giá trị để trống nghĩa là bỏ qua từ đó. Có thể sửa trực tiếp `python/dict_zh_vi.tsv` để mở rộng từ điển gốc.
+
+**Giới hạn thật của chế độ offline:** từ điển dịch từng cụm nên rất tốt với nhãn/nút/menu/tên riêng, nhưng câu dài bị sai trật tự từ (ví dụ cấu trúc "A 的 B"). Vì vậy ở `auto`, câu dài vẫn gọi Google (ít, gộp, có cache); muốn hoàn toàn không dùng Google cho câu dài thì dùng `openai` với mô hình chạy cục bộ (Ollama), hoặc chấp nhận `offline`.
+
+**Nhanh hơn:** ảnh vùng dịch không đổi (quét lại định kỳ, thử lại sau lỗi) thì dùng lại kết quả OCR, không OCR lại.
 
 ## Cách hệ thống tránh dịch sai vị trí
 

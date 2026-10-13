@@ -1,0 +1,411 @@
+# Tu dien Trung -> Viet (giản thể). Moi dong: TIENG_TRUNG<TAB>TIENG_VIET. Dong bat dau bang # la ghi chu.
+# Gia tri de TRONG = bo qua tu do (tro tu). Ban co the them tu rieng vao  ~/.screen-translator/glossary.tsv  (ghi de tu dien nay).
+# ---- giao dien / he thong
+设置	Cài đặt
+系统设置	Cài đặt hệ thống
+开始	Bắt đầu
+开始游戏	Bắt đầu trò chơi
+继续	Tiếp tục
+继续游戏	Tiếp tục trò chơi
+新游戏	Trò chơi mới
+退出	Thoát
+退出游戏	Thoát game
+确定	Đồng ý
+确认	Xác nhận
+取消	Hủy
+返回	Quay lại
+保存	Lưu
+删除	Xóa
+搜索	Tìm kiếm
+登录	Đăng nhập
+登陆	Đăng nhập
+注册	Đăng ký
+退出登录	Đăng xuất
+下载	Tải xuống
+上传	Tải lên
+文件	Tệp
+帮助	Trợ giúp
+关于	Giới thiệu
+关于我们	Về chúng tôi
+联系我们	Liên hệ chúng tôi
+语言	Ngôn ngữ
+音量	Âm lượng
+音乐	Âm nhạc
+音效	Hiệu ứng âm thanh
+声音	Âm thanh
+画质	Chất lượng hình ảnh
+图像	Đồ họa
+分辨率	Độ phân giải
+全屏	Toàn màn hình
+窗口	Cửa sổ
+控制	Điều khiển
+键盘	Bàn phím
+鼠标	Chuột
+手柄	Tay cầm
+菜单	Menu
+主菜单	Menu chính
+首页	Trang chủ
+主页	Trang chủ
+更多	Xem thêm
+更新	Cập nhật
+版本	Phiên bản
+网络	Mạng
+加载	Đang tải
+加载中	Đang tải
+正在加载	Đang tải
+请稍候	Vui lòng chờ
+请稍等	Vui lòng chờ
+成功	Thành công
+失败	Thất bại
+错误	Lỗi
+警告	Cảnh báo
+提示	Gợi ý
+打开	Mở
+关闭	Đóng
+开启	Bật
+全部	Tất cả
+选择	Chọn
+选项	Tùy chọn
+默认	Mặc định
+应用	Áp dụng
+重置	Đặt lại
+刷新	Làm mới
+复制	Sao chép
+粘贴	Dán
+剪切	Cắt
+编辑	Chỉnh sửa
+添加	Thêm
+新建	Tạo mới
+提交	Gửi
+发送	Gửi
+接收	Nhận
+分享	Chia sẻ
+收藏	Lưu yêu thích
+点赞	Thích
+评论	Bình luận
+关注	Theo dõi
+粉丝	Người theo dõi
+消息	Tin nhắn
+通知	Thông báo
+我的	Của tôi
+个人中心	Trang cá nhân
+用户名	Tên người dùng
+密码	Mật khẩu
+账号	Tài khoản
+账户	Tài khoản
+邮箱	Email
+手机号	Số điện thoại
+验证码	Mã xác minh
+同意	Đồng ý
+拒绝	Từ chối
+完成	Hoàn thành
+跳过	Bỏ qua
+查看	Xem
+详情	Chi tiết
+上一页	Trang trước
+下一页	Trang sau
+上一步	Bước trước
+下一步	Bước tiếp theo
+暂停	Tạm dừng
+播放	Phát
+视频	Video
+图片	Hình ảnh
+音频	Âm thanh
+直播	Phát trực tiếp
+隐私政策	Chính sách quyền riêng tư
+服务条款	Điều khoản dịch vụ
+用户协议	Thỏa thuận người dùng
+# ---- mua sam / web
+购物车	Giỏ hàng
+订单	Đơn hàng
+支付	Thanh toán
+优惠	Ưu đãi
+优惠券	Phiếu giảm giá
+折扣	Giảm giá
+立即购买	Mua ngay
+加入购物车	Thêm vào giỏ hàng
+客服	Chăm sóc khách hàng
+目录	Mục lục
+章节	Chương
+小说	Tiểu thuyết
+漫画	Truyện tranh
+阅读	Đọc
+作者	Tác giả
+简介	Giới thiệu
+最新	Mới nhất
+热门	Thịnh hành
+推荐	Đề xuất
+分类	Phân loại
+免费	Miễn phí
+价格	Giá
+数量	Số lượng
+# ---- game
+游戏	Trò chơi
+玩家	Người chơi
+等级	Cấp độ
+级	cấp
+经验	Kinh nghiệm
+经验值	Điểm kinh nghiệm
+金币	Vàng
+银币	Bạc
+钻石	Kim cương
+背包	Túi đồ
+商店	Cửa hàng
+商城	Cửa hàng
+任务	Nhiệm vụ
+主线任务	Nhiệm vụ chính
+支线任务	Nhiệm vụ phụ
+每日任务	Nhiệm vụ hằng ngày
+技能	Kỹ năng
+装备	Trang bị
+武器	Vũ khí
+防具	Giáp
+攻击	Tấn công
+攻击力	Sức tấn công
+防御	Phòng thủ
+防御力	Sức phòng thủ
+生命	Sinh lực
+生命值	Sinh lực
+魔法	Phép thuật
+魔法值	Ma lực
+体力	Thể lực
+速度	Tốc độ
+暴击	Chí mạng
+伤害	Sát thương
+好友	Bạn bè
+公会	Bang hội
+帮派	Bang phái
+排行榜	Bảng xếp hạng
+活动	Sự kiện
+邮件	Thư
+签到	Điểm danh
+充值	Nạp tiền
+购买	Mua
+出售	Bán
+领取	Nhận
+奖励	Phần thưởng
+副本	Phó bản
+地图	Bản đồ
+角色	Nhân vật
+英雄	Anh hùng
+怪物	Quái vật
+首领	Trùm
+战斗	Chiến đấu
+胜利	Chiến thắng
+复活	Hồi sinh
+升级	Nâng cấp
+强化	Cường hóa
+合成	Chế tạo
+抽卡	Quay thẻ
+宝箱	Rương báu
+道具	Vật phẩm
+物品	Vật phẩm
+限时	Giới hạn thời gian
+自动	Tự động
+手动	Thủ công
+存档	Lưu game
+读档	Tải game
+难度	Độ khó
+困难	Khó
+普通	Thường
+剩余	Còn lại
+时间	Thời gian
+# ---- dai tu / tro tu / lien tu
+我	tôi
+你	bạn
+您	quý vị
+他	anh ấy
+她	cô ấy
+它	nó
+我们	chúng tôi
+你们	các bạn
+他们	họ
+她们	họ
+这	này
+那	kia
+这个	cái này
+那个	cái kia
+这里	ở đây
+那里	ở đó
+什么	gì
+怎么	thế nào
+怎么样	thế nào
+为什么	tại sao
+谁	ai
+哪里	ở đâu
+哪	nào
+多少	bao nhiêu
+几	mấy
+不	không
+没有	không có
+没	không
+有	có
+在	ở
+是	là
+不是	không phải
+的	
+了	
+吗	không
+吧	
+呢	
+啊	
+和	và
+与	và
+或	hoặc
+或者	hoặc
+但是	nhưng
+但	nhưng
+因为	vì
+所以	nên
+如果	nếu
+可以	có thể
+不可以	không thể
+能	có thể
+会	sẽ
+要	muốn
+想	muốn
+去	đi
+来	đến
+到	đến
+看	xem
+说	nói
+做	làm
+用	dùng
+给	cho
+让	để
+被	bị
+把	
+对	đúng
+错	sai
+很	rất
+非常	rất
+太	quá
+也	cũng
+都	đều
+还	còn
+就	thì
+才	mới
+只	chỉ
+已经	đã
+正在	đang
+将	sẽ
+请	xin
+更	hơn
+最	nhất
+再	lại
+又	lại
+从	từ
+向	về phía
+为	vì
+被动	bị động
+# ---- cau chao / thong dung
+你好	xin chào
+您好	xin chào
+谢谢	cảm ơn
+感谢	cảm ơn
+对不起	xin lỗi
+没关系	không sao
+再见	tạm biệt
+欢迎	chào mừng
+欢迎使用	chào mừng bạn sử dụng
+欢迎来到	chào mừng đến với
+请问	xin hỏi
+好的	được
+很好	rất tốt
+不错	khá tốt
+好	tốt
+不好	không tốt
+今天	hôm nay
+明天	ngày mai
+昨天	hôm qua
+现在	bây giờ
+以后	sau này
+以前	trước đây
+时候	lúc
+今天天气很好	hôm nay thời tiết rất đẹp
+天气	thời tiết
+年	năm
+月	tháng
+日	ngày
+天	ngày
+小时	giờ
+分钟	phút
+秒	giây
+大	lớn
+小	nhỏ
+多	nhiều
+少	ít
+新	mới
+旧	cũ
+高	cao
+低	thấp
+快	nhanh
+慢	chậm
+真	thật
+假	giả
+简单	đơn giản
+容易	dễ
+重要	quan trọng
+公园	công viên
+玩	chơi
+我们去公园玩	chúng ta đi công viên chơi
+学习	học tập
+工作	công việc
+学校	trường học
+老师	giáo viên
+学生	học sinh
+朋友	bạn bè
+家	nhà
+人	người
+男	nam
+女	nữ
+中国	Trung Quốc
+越南	Việt Nam
+中文	tiếng Trung
+汉语	tiếng Trung
+英语	tiếng Anh
+越南语	tiếng Việt
+繁体中文	tiếng Trung phồn thể
+简体中文	tiếng Trung giản thể
+测试	thử nghiệm
+文字	văn bản
+测试文字	văn bản thử nghiệm
+世界	thế giới
+这是	đây là
+一个	một
+翻译	dịch
+屏幕	màn hình
+萤幕	màn hình
+荧幕	màn hình
+软件	phần mềm
+软体	phần mềm
+屏幕翻译	dịch màn hình
+翻译软件	phần mềm dịch
+信息	thông tin
+内容	nội dung
+名称	tên
+名字	tên
+状态	trạng thái
+类型	loại
+大小	kích thước
+日期	ngày tháng
+位置	vị trí
+# ---- so
+零	không
+一	một
+二	hai
+两	hai
+三	ba
+四	bốn
+五	năm
+六	sáu
+七	bảy
+八	tám
+九	chín
+十	mười
+百	trăm
+千	nghìn
+万	vạn
+第	thứ
+个	
+次	lần

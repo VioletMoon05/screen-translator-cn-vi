@@ -19,7 +19,8 @@ public class Config {
     public double fontScale = 1.0;
     public int bgOpacity = 255;               // 0..255
     public String textColor = "auto";         // "auto" hoac "#RRGGBB"
-    public String provider = "google";        // google | openai
+    public int cfgVersion = 0;                // 2 = da chuyen sang che do auto (tu dien offline + Google co gioi han)
+    public String provider = "auto";          // auto | offline | google | openai
     public String openaiUrl = "http://localhost:11434/v1";
     public String openaiModel = "qwen2.5:7b";
     public String openaiKeyEnc = "";
@@ -48,12 +49,21 @@ public class Config {
         try {
             if (Files.exists(file())) {
                 Config c = new Gson().fromJson(Files.readString(file(), StandardCharsets.UTF_8), Config.class);
-                if (c != null) return c;
+                if (c != null) {
+                    if (c.cfgVersion < 2) {            // cau hinh cu mac dinh "google" hay bi chan 429 -> chuyen sang auto
+                        if ("google".equals(c.provider)) c.provider = "auto";
+                        c.cfgVersion = 2;
+                        c.save();
+                    }
+                    return c;
+                }
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            AppLog.error("Doc config that bai", e);
         }
-        return new Config();
+        Config c = new Config();
+        c.cfgVersion = 2;
+        return c;
     }
 
     public synchronized void save() {

@@ -56,4 +56,11 @@ for name, img in cases.items():
     if not r["items"]:
         ok = False
 print("KET QUA:", "OK" if ok else "THAT BAI")
-sys.exit(0 if ok else 1)
+
+# --- dich offline bang tu dien (khong mang)
+import offline
+server.CFG["provider"] = "offline"
+tests = {"设置": "Cài đặt", "開始遊戲": "Bắt đầu trò chơi", "今天天气很好，我们去公园玩。": "Hôm nay thời tiết rất đẹp, chúng ta đi công viên chơi."}
+ok2 = all(server.TR.translate([k])[0] == v for k, v in tests.items())
+print("TU DIEN OFFLINE:", "OK" if ok2 else "THAT BAI", offline.size())
+sys.exit(0 if (ok and ok2) else 1)
