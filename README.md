@@ -143,3 +143,4 @@ Tốc độ: trong môi trường thử của tôi, mỗi lần OCR cỡ 1–2 g
 - Chọn vùng và overlay dùng tọa độ logic của Java; nhiều màn hình có DPI khác nhau có thể lệch.
 - Cập nhật khi cuộn là "xóa → chờ ổn định → quét lại", nên có độ trễ ngắn sau khi dừng cuộn thay vì dịch mượt trong lúc cuộn.
 - Lịch sử SQLite chỉ ghi khi bật trong Cài đặt; mặc định không lưu gì.
+update test
