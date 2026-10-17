@@ -1,4 +1,4 @@
-# 🈶 Screen Translator CN → VI
+#  Screen Translator CN → VI
 
 <div align="center">
 
@@ -26,23 +26,23 @@
 
 ---
 
-## 🌸 About
+##  About
 
 **Screen Translator CN → VI** is a Windows application designed to help you translate Chinese text into Vietnamese directly from your screen.
 
 Whether you're reading Chinese content, browsing websites, playing games, or using applications that don't provide Vietnamese translations, Screen Translator aims to make understanding Chinese content more convenient.
 
-## ✨ Features
+##  Features
 
-- 🈶 **Chinese to Vietnamese** — translate Chinese text into Vietnamese.
-- 🖥️ **Screen-oriented workflow** — designed for translating content displayed on your screen.
-- 💬 **Convenient translation** — make Chinese content easier to understand without manually retyping everything.
-- 🎮 **Useful for games and applications** — a potential companion for Chinese games, software, and other Chinese-language content.
-- 📦 **Portable ZIP package** — download and extract the release package to get started.
+-  **Chinese to Vietnamese** — translate Chinese text into Vietnamese.
+-  **Screen-oriented workflow** — designed for translating content displayed on your screen.
+-  **Convenient translation** — make Chinese content easier to understand without manually retyping everything.
+-  **Useful for games and applications** — a potential companion for Chinese games, software, and other Chinese-language content.
+-  **Portable ZIP package** — download and extract the release package to get started.
 
 > Note: Available features and requirements depend on the specific release. Please refer to the included documentation.
 
-## 💻 System Requirements
+##  System Requirements
 
 | Item | Details |
 |---|---|
@@ -52,7 +52,7 @@ Whether you're reading Chinese content, browsing websites, playing games, or usi
 | Current Release | 1.1.0 |
 | Package Format | ZIP |
 
-## 📥 Download & Install
+##  Download & Install
 
 1. Click the **Download Latest Release** button above.
 2. Open the latest release page on GitHub.
@@ -60,11 +60,11 @@ Whether you're reading Chinese content, browsing websites, playing games, or usi
 4. Extract the ZIP file to a folder on your computer.
 5. Open the extracted folder and follow the included instructions to launch the application.
 
-### 📦 Direct Download — Version 1.1.0
+###  Direct Download — Version 1.1.0
 
 [**Download ScreenTranslatorCNVI-1.1.0.zip**](https://github.com/VioletMoon05/screen-translator-cn-vi/releases/download/1.1.0/ScreenTranslatorCNVI-1.1.0.zip)
 
-## 🔄 Updates & Versions
+##  Updates & Versions
 
 New versions will be published on the GitHub Releases page.
 
@@ -72,7 +72,7 @@ New versions will be published on the GitHub Releases page.
 - **All Releases:** [Browse version history](https://github.com/VioletMoon05/screen-translator-cn-vi/releases)
 - **Version 1.1.0:** [Download ZIP](https://github.com/VioletMoon05/screen-translator-cn-vi/releases/download/1.1.0/ScreenTranslatorCNVI-1.1.0.zip)
 
-### 🛠️ Updating the README for a New Version
+###  Updating the README for a New Version
 
 When releasing a new version, update the version badge and version-specific download link above. Keep the **Latest Release** button unchanged so it continues to point to GitHub's latest published release.
 
@@ -84,16 +84,16 @@ Make sure the corresponding release and ZIP asset exist on GitHub before publish
 
 ## 🔗 Links
 
-- 🚀 [Latest Release](https://github.com/VioletMoon05/screen-translator-cn-vi/releases/latest)
-- 📚 [All Releases](https://github.com/VioletMoon05/screen-translator-cn-vi/releases)
-- 📦 [Download Version 1.1.0](https://github.com/VioletMoon05/screen-translator-cn-vi/releases/download/1.1.0/ScreenTranslatorCNVI-1.1.0.zip)
-- 💻 [GitHub Repository](https://github.com/VioletMoon05/screen-translator-cn-vi)
+-  [Latest Release](https://github.com/VioletMoon05/screen-translator-cn-vi/releases/latest)
+-  [All Releases](https://github.com/VioletMoon05/screen-translator-cn-vi/releases)
+-  [Download Version 1.1.0](https://github.com/VioletMoon05/screen-translator-cn-vi/releases/download/1.1.0/ScreenTranslatorCNVI-1.1.0.zip)
+-  [GitHub Repository](https://github.com/VioletMoon05/screen-translator-cn-vi)
 
 ---
 
 <div align="center">
 
-  <p>💜 <strong>Made to make Chinese content easier to understand.</strong></p>
+  <p> <strong>Made to make Chinese content easier to understand.</strong></p>
   <sub>Screen Translator CN → VI · Windows Desktop Application</sub>
 
 </div>
