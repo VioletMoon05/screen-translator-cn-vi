@@ -1,4 +1,4 @@
-#  Screen Translator CN → VI
+#  Screen Translator CN → VI update 1
 
 <div align="center">
 
