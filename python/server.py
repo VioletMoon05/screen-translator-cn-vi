@@ -3,11 +3,11 @@
 """
 Backend Python cho Screen Translator CN-VI.
 
-Java gui anh PNG (vung man hinh) toi POST /ocr; backend:
-  1. OCR (RapidOCR / ONNX Runtime) -> cac dong chu + toa do
-  2. Loc dong chua chu Han, gop dong thanh doan (tuy chon)
-  3. Dich Trung -> Viet (Google qua deep-translator, hoac API kieu OpenAI / Ollama cuc bo)
-  4. Phan tich nen / mau chu, tao mieng nen da xoa chu (inpaint) cho nen phuc tap
+Java gui anh (vung man hinh hoac toan man hinh) toi POST /ocr; backend:
+  1. OCR (RapidOCR / ONNX Runtime) -> nhan dien chu Trung (gian the / phon the) + toa do hop chu
+  2. Loc dong chu Han CJK, gop dong thanh doan van
+  3. Dich Trung -> Viet (Tu dien offline VietPhrase / dict_zh_vi.tsv, hoac Google / OpenAI)
+  4. Phan tich mau nen / mau chu, tao mieng nen inpaint cho nen phuc tap
 Giao tiep: HTTP JSON chi tren 127.0.0.1.
 """
 import argparse
@@ -35,15 +35,16 @@ import build_dict
 import offline
 
 CFG = {
-    "provider": "offline",         # offline (mac dinh, khong mang) | auto (offline + Google khi do phu thap) | google | openai | echo (kiem thu)
+    "provider": "offline",         # offline (mac dinh, tu dien cuc nhanh) | auto (offline + Google) | google | openai | echo
     "openaiUrl": "http://localhost:11434/v1",
     "openaiKey": "",
     "openaiModel": "qwen2.5:7b",
     "mode": "speed",               # speed | accuracy
     "lowEnd": False,
     "mergeLines": True,
-    "minConfidence": 0.5,
+    "minConfidence": 0.4,
     "saveHistory": False,
+    "ocrThreads": 0,               # 0 = tu dong (toi da 4 luong), -1 = toan bo nhan, N = dung N luong
 }
 DATA_DIR = os.path.join(os.path.expanduser("~"), ".screen-translator")
 
@@ -56,10 +57,45 @@ ENGINE = None
 OCR_LOCK = threading.Lock()
 
 
-def load_engine():
-    global ENGINE
+ENGINE_THREADS = None
+
+
+def resolve_threads(req):
+    """0 = tu dong: nua so nhan, trong khoang 2..4 (OCR khong nhanh hon nhieu khi qua 4 luong nhung an CPU nhieu hon han);
+    -1 = de ONNX Runtime dung toan bo nhan; N > 0 = dung dung N luong."""
+    cores = os.cpu_count() or 4
+    if req is None or req == 0:
+        return max(2, min(4, cores // 2))
+    if req < 0:
+        return -1
+    return max(1, min(int(req), cores))
+
+
+def load_engine(req=0):
+    """Nap (hoac nap lai) bo OCR voi so luong luong tinh toan duoc yeu cau."""
+    global ENGINE, ENGINE_THREADS
     from rapidocr_onnxruntime import RapidOCR
-    ENGINE = RapidOCR()
+    n = resolve_threads(req)
+    if n < 0:
+        eng = RapidOCR()
+    else:
+        eng = RapidOCR(intra_op_num_threads=n, inter_op_num_threads=1)
+    ENGINE = eng
+    ENGINE_THREADS = req
+    print("OCR engine: threads=%s" % ("all" if n < 0 else n), flush=True)
+
+
+def lower_priority():
+    """Ha do uu tien tien trinh OCR de may van muot khi OCR dang chay nang (Windows: BELOW_NORMAL; Linux/mac: nice)."""
+    try:
+        if os.name == "nt":
+            import ctypes
+            k32 = ctypes.windll.kernel32
+            k32.SetPriorityClass(k32.GetCurrentProcess(), 0x00004000)   # BELOW_NORMAL_PRIORITY_CLASS
+        else:
+            os.nice(5)
+    except Exception:
+        pass
 
 
 def run_ocr(img):
@@ -73,8 +109,10 @@ def run_ocr(img):
     elif CFG["mode"] == "accuracy" and max(h, w) < 1600:
         scale = 1.5
         proc = cv2.resize(img, None, fx=scale, fy=scale, interpolation=cv2.INTER_CUBIC)
+    
     with OCR_LOCK:
         result, _ = ENGINE(proc, use_cls=False)
+    
     lines = []
     for box, text, score in (result or []):
         score = float(score)
@@ -82,16 +120,17 @@ def run_ocr(img):
         if not text or score < CFG["minConfidence"]:
             continue
         cjk = len(CJK_RE.findall(text))
-        letters = len(re.sub(r"\s", "", text))
-        # giu dong co chu Han (ke ca lan tieng Anh); bo chu rac / dong khong phai tieng Trung
-        if not (cjk >= 2 or (cjk == 1 and letters <= 4)):
+        # Giu cac dong co chua it nhat 1 chu Han (ke ca nhan ngan 1 chu nhu 确定, 是, 否, 关, 开, 买, 卖...)
+        if cjk < 1:
             continue
+        
+        # Toa do hop chu
         xs = [p[0] / scale for p in box]
         ys = [p[1] / scale for p in box]
         x0, y0, x1, y1 = int(min(xs)), int(min(ys)), int(max(xs)) + 1, int(max(ys)) + 1
         x0, y0 = max(0, x0), max(0, y0)
         x1, y1 = min(w, x1), min(h, y1)
-        if x1 - x0 < 6 or y1 - y0 < 6:
+        if x1 - x0 < 4 or y1 - y0 < 4:
             continue
         lines.append(dict(x0=x0, y0=y0, x1=x1, y1=y1, text=text, score=score))
     return lines
@@ -216,7 +255,7 @@ class GoogleFree:
     def remaining(self):
         return max(0.0, self.cool_until - time.time())
 
-    def _post(self, text):                       # tach rieng de co the thay khi kiem thu
+    def _post(self, text):
         data = urllib.parse.urlencode({"client": "gtx", "sl": "zh-CN", "tl": "vi", "dt": "t", "q": text}).encode("utf-8")
         req = urllib.request.Request(self.URL, data=data, headers={
             "User-Agent": "Mozilla/5.0", "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"})
@@ -224,7 +263,7 @@ class GoogleFree:
             return json.loads(r.read().decode("utf-8"))
 
     def _request(self, text):
-        with self.lock:                          # tuan tu + cach quang: khong bao gio bung no nhieu request
+        with self.lock:
             wait = self.last + self.MIN_GAP - time.time()
             if wait > 0:
                 time.sleep(wait)
@@ -260,24 +299,23 @@ class GoogleFree:
             if len(lines) == len(b):
                 for i, l in zip(b, lines):
                     res[i] = l or None
-            else:                                # Google gop/tach dong -> dich rieng (toi da 6 request them)
+            else:
                 for i in b[:6]:
                     res[i] = self._request(clean[i]).strip() or None
         return res
 
 
 class Translator:
-    """Thu tu: cache -> glossary/tu dien (exact) -> tu dien (cum ngan) -> online (gop, gioi han) -> tu dien (du phong)."""
+    """Thu tu uu tien: cache -> glossary/tu dien rieng -> tu dien lon VietPhrase/dict_zh_vi -> online (Google/OpenAI)."""
 
     def __init__(self):
-        self.cache = OrderedDict()               # ban dich ONLINE da hoc (luu ca ra dia)
+        self.cache = OrderedDict()
         self.lock = threading.Lock()
         self.pool = ThreadPoolExecutor(max_workers=4)
         self.last_error = None
         self.google = GoogleFree()
         self.db_path = None
 
-    # ---- cache vinh vien (SQLite): dich mot lan, lan sau khong goi mang nua
     def load_cache(self, data_dir):
         self.db_path = os.path.join(data_dir, "cache.db")
         try:
@@ -318,16 +356,15 @@ class Translator:
             while len(self.cache) > 20000:
                 self.cache.popitem(last=False)
 
-    # ---- chinh
     def translate(self, texts):
         self.last_error = None
         prov = CFG["provider"]
         n = len(texts)
         out = [None] * n
-        fallback = {}                            # i -> (ban dich tu dien, do phu)
+        fallback = {}
         need = []
         for i, t in enumerate(texts):
-            e = offline.exact(t)                 # glossary cua ban + tu dien: luon uu tien, khong mat mang
+            e = offline.exact(t)
             if e:
                 out[i] = e
                 continue
@@ -344,7 +381,7 @@ class Translator:
             tr, cov = offline.translate(t)
             fallback[i] = (tr, cov)
             if prov == "offline" or (prov == "auto" and cov >= 0.9):
-                out[i] = tr                      # tu dien phu du -> dich offline, khong dung mang
+                out[i] = tr
             else:
                 need.append(i)
         if need:
@@ -364,14 +401,13 @@ class Translator:
                     self._put(texts[i], r)
                     rows.append((self._tag(), texts[i], r))
             self._persist(rows)
-            for i in need:                       # du phong: tu dien (khong luu cache)
+            for i in need:
                 if out[i] is None and i in fallback and fallback[i][1] >= 0.5:
                     out[i] = fallback[i][0]
             if self.last_error and all(out[i] for i in need):
-                self.last_error = None           # da dich du bang tu dien -> khong bao loi do
+                self.last_error = None
         return out
 
-    # ---- API kieu OpenAI / Ollama (giu nhu truoc)
     def _chat(self, system, user):
         url = CFG["openaiUrl"].rstrip("/") + "/chat/completions"
         body = json.dumps({
@@ -420,7 +456,7 @@ def save_history(rows):
 
 
 # ------------------------------------------------------------------- xu ly chinh
-OCR_CACHE = OrderedDict()                        # md5(anh) -> cac dong OCR: quet lai/thu lai khong OCR lai
+OCR_CACHE = OrderedDict()
 
 
 def process(img, key=None):
@@ -471,27 +507,56 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(data)
 
+    def read_body(self, n):
+        """Doc du n byte tu socket, khong de bi thieu byte do buffer chunk."""
+        chunks = []
+        remain = n
+        while remain > 0:
+            c = self.rfile.read(min(remain, 65536))
+            if not c:
+                break
+            chunks.append(c)
+            remain -= len(c)
+        return b"".join(chunks)
+
     def do_GET(self):
         if self.path.startswith("/health"):
             self._send({"ok": True, "ready": ENGINE is not None, "dict": offline.size()})
         elif self.path.startswith("/dict_status"):
             self._send(dict(DICT_JOB, size=offline.size()[2]))
+        elif self.path.startswith("/lang_status"):
+            self._send({"state": "ready", "msg": "sẵn sàng"})
         else:
             self._send({"error": "not found"}, 404)
 
     def do_POST(self):
         n = int(self.headers.get("Content-Length", "0"))
-        body = self.rfile.read(n) if n else b""
+        body = self.read_body(n) if n else b""
         try:
             if self.path.startswith("/config"):
                 CFG.update(json.loads(body.decode("utf-8")))
                 OCR_CACHE.clear()
+                want = CFG.get("ocrThreads", 0)
+                if ENGINE is not None and want != ENGINE_THREADS and resolve_threads(want) != resolve_threads(ENGINE_THREADS):
+                    with OCR_LOCK:
+                        load_engine(want)
                 self._send({"ok": True})
             elif self.path.startswith("/build_dict"):
                 start_dict_build()
                 self._send({"ok": True})
             elif self.path.startswith("/ocr"):
-                img = cv2.imdecode(np.frombuffer(body, np.uint8), cv2.IMREAD_COLOR)
+                img = None
+                ct = self.headers.get("Content-Type") or ""
+                if ct.startswith("image/x-raw-rgb"):
+                    w = int(self.headers.get("X-W", "0"))
+                    h = int(self.headers.get("X-H", "0"))
+                    if w > 0 and h > 0 and len(body) == w * h * 3:
+                        img = np.ascontiguousarray(np.frombuffer(body, np.uint8).reshape(h, w, 3)[:, :, ::-1])
+                
+                # Mac dinh hoac neu raw khong thanh cong: thu decode PNG
+                if img is None and len(body) > 0:
+                    img = cv2.imdecode(np.frombuffer(body, np.uint8), cv2.IMREAD_COLOR)
+                
                 if img is None:
                     self._send({"items": [], "error": "Ảnh không hợp lệ"}, 400)
                 else:
@@ -506,7 +571,7 @@ DICT_JOB = {"state": "idle", "msg": ""}
 
 
 def start_dict_build():
-    """Tai + dung tu dien lon trong luong nen (goi tu giao dien khi chua co dict_big.db)."""
+    """Tai + dung tu dien lon trong luong nen."""
     if DICT_JOB["state"] == "running":
         return
 
@@ -539,11 +604,20 @@ def main():
     ap.add_argument("--port", type=int, default=8765)
     ap.add_argument("--data-dir", default=DATA_DIR)
     ap.add_argument("--no-watch", action="store_true")
+    ap.add_argument("--threads", type=int, default=0, help="so luong luong OCR: 0 tu dong, -1 toan bo nhan")
+    ap.add_argument("--normal-priority", action="store_true", help="khong ha do uu tien tien trinh")
     a = ap.parse_args()
     DATA_DIR = a.data_dir
+    if not a.normal_priority:
+        lower_priority()
+    try:
+        cv2.setNumThreads(2)
+    except Exception:
+        pass
     offline.load(DATA_DIR)
     TR.load_cache(DATA_DIR)
-    load_engine()
+    CFG["ocrThreads"] = a.threads
+    load_engine(a.threads)
     if not a.no_watch:
         threading.Thread(target=watch_parent, daemon=True).start()
     srv = ThreadingHTTPServer(("127.0.0.1", a.port), Handler)
