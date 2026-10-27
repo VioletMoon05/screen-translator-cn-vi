@@ -180,6 +180,21 @@ public class OverlayWindow extends JWindow {
         repaint();
     }
 
+    /**
+     * Doi danh sach khoi theo ham fn (chay trong khoa nen khong mat/ghi de nham khoi do luong khac them vao).
+     * fn nhan danh sach hien tai (khong duoc sua tai cho) va tra ve danh sach moi.
+     */
+    public void transform(java.util.function.UnaryOperator<List<Item>> fn) {
+        boolean changed;
+        synchronized (lock) {
+            List<Item> before = items;
+            List<Item> after = fn.apply(before);
+            changed = after != before;          // fn tra ve chinh danh sach cu = khong co gi doi -> khong ve lai ca cua so
+            items = after;
+        }
+        if (changed) repaint();
+    }
+
     /** Thay the cac khoi nam tron trong vung quet bang ket qua moi. */
     public void replace(Rectangle crop, boolean full, List<Item> add) {
         synchronized (lock) {
