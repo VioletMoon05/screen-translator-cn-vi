@@ -71,7 +71,7 @@ New versions will be published on the GitHub Releases page.
 - **Latest Release:** [View the latest version](https://github.com/VioletMoon05/screen-translator-cn-vi/releases/latest)
 - **All Releases:** [Browse version history](https://github.com/VioletMoon05/screen-translator-cn-vi/releases)
 - **Version 1.1.0:** [Download ZIP](https://github.com/VioletMoon05/screen-translator-cn-vi/releases/download/1.1.0/ScreenTranslatorCNVI-1.1.0.zip)
-
+- **Version 1.2.0:** [Download ZIP](https://github.com/VioletMoon05/screen-translator-cn-vi/releases/download/1.2.0/Screen-traslator-cn-vi-1.2.0.zip)
 ###  Updating the README for a New Version
 
 When releasing a new version, update the version badge and version-specific download link above. Keep the **Latest Release** button unchanged so it continues to point to GitHub's latest published release.
