@@ -27,12 +27,21 @@ public class MainWindow extends JFrame {
     private final JLabel lTr = new JLabel(" ");
     private final JLabel lErr = new JLabel(" ");
     private final JButton bSelect = new JButton("1. Chọn vùng");
+    private final JButton bFull = new JButton("Dịch toàn màn hình");
     private final JButton bStart = new JButton("2. Bắt đầu dịch");
     private final JButton bPause = new JButton("Tạm dừng");
     private final JButton bStop = new JButton("Dừng dịch");
     private final JButton bOverlay = new JButton("Ẩn/hiện bản dịch");
     private final JButton bNow = new JButton("Dịch ngay");
     private final JCheckBox cAuto = new JCheckBox("Tự động dịch", cfgAuto());
+    private final JComboBox<String> cLang = new JComboBox<>(langNames());
+    private javax.swing.Timer langPoll;
+
+    private static String[] langNames() {
+        String[] n = new String[Config.LANGS.length];
+        for (int i = 0; i < n.length; i++) n[i] = Config.LANGS[i][1];
+        return n;
+    }
 
     private boolean cfgAuto() { return cfg.autoTranslate; }
 
@@ -58,7 +67,11 @@ public class MainWindow extends JFrame {
 
         bStart.setFont(bStart.getFont().deriveFont(Font.BOLD));
         JPanel buttons = new JPanel(new GridLayout(0, 2, 6, 6));
-        for (JButton b : List.of(bSelect, bStart, bPause, bStop, bOverlay, bNow)) buttons.add(b);
+        buttons.add(new JLabel("Ngôn ngữ trên màn hình:"));
+        cLang.setSelectedIndex(Config.langIndex(cfg.srcLang));
+        cLang.setToolTipText("Tiếng Trung dịch offline bằng từ điển. Ngôn ngữ khác: tải model OCR một lần (~10 MB) và dịch trực tuyến.");
+        buttons.add(cLang);
+        for (JButton b : List.of(bSelect, bFull, bStart, bPause, bStop, bOverlay, bNow)) buttons.add(b);
         JButton bSettings = new JButton("Cài đặt");
         JButton bLog = new JButton("Mở file log");
         buttons.add(bSettings);
@@ -78,12 +91,14 @@ public class MainWindow extends JFrame {
         root.add(buttons, BorderLayout.NORTH);
         root.add(status, BorderLayout.CENTER);
         setContentPane(root);
-        setSize(460, 400);
+        setSize(480, 430);
         setAlwaysOnTop(true);
         setLocationByPlatform(true);
 
         bSelect.addActionListener(e -> selectRegion(false));
         bStart.addActionListener(e -> startTranslate());
+        bFull.setToolTipText("Dịch toàn bộ màn hình đang chứa con trỏ chuột; bản dịch đi theo chữ khi cuộn/kéo cửa sổ, chữ bị che thì bỏ");
+        bFull.addActionListener(e -> translateFullScreen());
         bPause.addActionListener(e -> { pipeline.togglePause(); refreshButtons(); });
         bStop.addActionListener(e -> stopTranslate());
         bOverlay.addActionListener(e -> pipeline.toggleOverlay());
@@ -91,6 +106,7 @@ public class MainWindow extends JFrame {
         bSettings.addActionListener(e -> new SettingsDialog(this, cfg, this::settingsChanged).setVisible(true));
         bLog.addActionListener(e -> openLog());
         cAuto.addActionListener(e -> { cfg.autoTranslate = cAuto.isSelected(); cfg.save(); });
+        cLang.addActionListener(e -> langChanged());
         updateRegionLabel();
         refreshButtons();
         registerHotkeys();
@@ -109,14 +125,58 @@ public class MainWindow extends JFrame {
         watchdog.start();
     }
 
+    /** Man hinh dang chua con tro chuot (de dich toan man hinh); khong co thi man hinh chinh. */
+    private static Rectangle screenUnderPointer() {
+        GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
+        try {
+            PointerInfo pi = MouseInfo.getPointerInfo();
+            if (pi != null) {
+                for (GraphicsDevice d : ge.getScreenDevices()) {
+                    Rectangle b = d.getDefaultConfiguration().getBounds();
+                    if (b.contains(pi.getLocation())) return b;
+                }
+            }
+        } catch (Throwable ignored) {
+        }
+        return ge.getDefaultScreenDevice().getDefaultConfiguration().getBounds();
+    }
+
+    private static boolean isFullScreen(Rectangle r) {
+        if (r == null) return false;
+        for (GraphicsDevice d : GraphicsEnvironment.getLocalGraphicsEnvironment().getScreenDevices())
+            if (d.getDefaultConfiguration().getBounds().equals(r)) return true;
+        return false;
+    }
+
+    /** Dich toan bo man hinh; dang dich toan man hinh thi bam lai de dung. */
+    private void toggleFullScreen() {
+        if (pipeline.isRunning() && isFullScreen(pipeline.region())) {
+            stopTranslate(false);
+            return;
+        }
+        translateFullScreen();
+    }
+
+    private void translateFullScreen() {
+        if (!ready) return;
+        Rectangle b = screenUnderPointer();
+        region = b;
+        cfg.lastRegion = new int[]{b.x, b.y, b.width, b.height};
+        cfg.save();
+        updateRegionLabel();
+        launch(b, getState() != Frame.ICONIFIED);      // dang thu nho (phim tat) thi dich luon, khong mo cua so
+    }
+
     private void updateRegionLabel() {
-        lRegion.setText(region == null ? "Vùng dịch: chưa chọn"
-                : "Vùng dịch: " + region.width + "×" + region.height + " tại (" + region.x + ", " + region.y + ")");
+        lRegion.setText((region == null ? "Vùng dịch: chưa chọn"
+                : (isFullScreen(region) ? "Vùng dịch: toàn màn hình " : "Vùng dịch: ") + region.width + "×" + region.height + " tại (" + region.x + ", " + region.y + ")")
+                + " • Nguồn: " + cfg.langName());
     }
 
     private void refreshButtons() {
         boolean run = pipeline.isRunning();
         bSelect.setEnabled(ready);
+        bFull.setEnabled(ready);
         bStart.setEnabled(ready && !run);
         bPause.setEnabled(run);
         bPause.setText(pipeline.isPaused() ? "Tiếp tục" : "Tạm dừng");
@@ -133,6 +193,7 @@ public class MainWindow extends JFrame {
                     throw new IllegalStateException("Backend Python không khởi động được. Log cuối: " + backend.lastLog());
                 backend.pushConfig();
                 ready = true;
+                if (!"zh".equals(cfg.srcLang)) SwingUtilities.invokeLater(this::watchLangModel);
                 final int big = backend.bigDictSize();
                 AppLog.info("Tu dien lon: " + big + " cum");
                 SwingUtilities.invokeLater(() -> {
@@ -194,7 +255,8 @@ public class MainWindow extends JFrame {
                 new HotkeyManager.Binding(cfg.hkToggle, pipeline::toggleOverlay),
                 new HotkeyManager.Binding(cfg.hkPause, () -> { pipeline.togglePause(); refreshButtons(); }),
                 new HotkeyManager.Binding(cfg.hkReselect, () -> selectRegion(true)),
-                new HotkeyManager.Binding(cfg.hkStop, this::stopTranslate)));
+                new HotkeyManager.Binding(cfg.hkStop, () -> stopTranslate(false)),
+                new HotkeyManager.Binding(cfg.hkFull, this::toggleFullScreen)));
         if (!failed.isEmpty()) {
             lErr.setText("Phím tắt bị trùng, hãy đổi trong Cài đặt: " + String.join(", ", failed));
             lErr.setForeground(new Color(0xB00020));
@@ -209,6 +271,60 @@ public class MainWindow extends JFrame {
         }).start();
         registerHotkeys();
         overlay.repaint();
+    }
+
+    /** Doi ngon ngu nguon: gui cau hinh, backend tu tai/nap model OCR (neu can), dich lai vung dang chay. */
+    private void langChanged() {
+        String code = Config.LANGS[Math.max(0, cLang.getSelectedIndex())][0];
+        if (code.equals(cfg.srcLang)) return;
+        cfg.srcLang = code;
+        cfg.save();
+        updateRegionLabel();
+        if (!"zh".equals(code) && ("offline".equals(cfg.provider) || "auto".equals(cfg.provider))) {
+            lErr.setText(cfg.langName() + ": dịch trực tuyến bằng Google (chỉ gửi văn bản, không gửi ảnh) nên cần mạng.");
+            lErr.setForeground(new Color(0xB36B00));
+        } else {
+            lErr.setText(" ");
+            lErr.setForeground(Color.DARK_GRAY);
+        }
+        new Thread(() -> {
+            try {
+                backend.pushConfig();
+            } catch (Exception ex) {
+                SwingUtilities.invokeLater(() -> lErr.setText("Không gửi được cấu hình: " + ex.getMessage()));
+                return;
+            }
+            if (pipeline.isRunning()) pipeline.translateNow();
+        }, "lang-push").start();
+        watchLangModel();
+    }
+
+    /** Theo doi tien do tai model OCR cua ngon ngu dang chon (hien o dong OCR) cho den khi xong hoac loi. */
+    private void watchLangModel() {
+        if (langPoll != null) langPoll.stop();
+        if ("zh".equals(cfg.srcLang)) return;
+        final String lang = cfg.srcLang;
+        langPoll = new Timer(1000, ev -> new Thread(() -> {
+            try {
+                java.util.Map<?, ?> m = new com.google.gson.Gson().fromJson(backend.langStatus(), java.util.Map.class);
+                String st = String.valueOf(m.get("state")), msg = String.valueOf(m.get("msg"));
+                SwingUtilities.invokeLater(() -> {
+                    if (!lang.equals(cfg.srcLang)) { langPoll.stop(); return; }
+                    if ("running".equals(st)) {
+                        lOcr.setText("Model OCR " + cfg.langName() + ": " + msg);
+                    } else if ("ready".equals(st)) {
+                        langPoll.stop();
+                        lOcr.setText("Model OCR " + cfg.langName() + ": sẵn sàng");
+                    } else if ("error".equals(st)) {
+                        langPoll.stop();
+                        lErr.setText("Model OCR " + cfg.langName() + ": " + msg);
+                        lErr.setForeground(new Color(0xB00020));
+                    }
+                });
+            } catch (Exception ignored) {
+            }
+        }, "lang-poll").start());
+        langPoll.start();
     }
 
     private void openLog() {
@@ -231,10 +347,17 @@ public class MainWindow extends JFrame {
     }
 
     private void stopTranslate() {
+        stopTranslate(true);
+    }
+
+    /** bringBack = false khi dung bang phim tat: dung ngay, cua so dang thu nho thi van de nguyen thu nho. */
+    private void stopTranslate(boolean bringBack) {
         pipeline.stop();
         refreshButtons();
-        if (getState() == Frame.ICONIFIED) setState(Frame.NORMAL);
-        toFront();
+        if (bringBack) {
+            if (getState() == Frame.ICONIFIED) setState(Frame.NORMAL);
+            toFront();
+        }
     }
 
     /** Thu nho cua so dieu khien (de khong lot vao vung dich) roi bat dau dich ngay. */
