@@ -105,6 +105,8 @@ public class PythonBackend {
         cmd.add(String.valueOf(cfg.port));
         cmd.add("--data-dir");
         cmd.add(Config.dir().toString());
+        cmd.add("--threads");
+        cmd.add(String.valueOf(cfg.ocrThreads()));
         ProcessBuilder pb = new ProcessBuilder(cmd).redirectErrorStream(true);
         proc = pb.start();     // stdin de mo: Python tu thoat khi Java thoat
         Process p = proc;
@@ -145,6 +147,16 @@ public class PythonBackend {
     public String dictStatus() throws Exception {
         return http.send(HttpRequest.newBuilder(URI.create(base() + "/dict_status"))
                 .timeout(Duration.ofSeconds(5)).build(), HttpResponse.BodyHandlers.ofString()).body();
+    }
+
+    /** JSON {"state": ready, "msg": san sang}. */
+    public String langStatus() throws Exception {
+        try {
+            return http.send(HttpRequest.newBuilder(URI.create(base() + "/lang_status"))
+                    .timeout(Duration.ofSeconds(5)).build(), HttpResponse.BodyHandlers.ofString()).body();
+        } catch (Exception e) {
+            return "{\"state\":\"ready\",\"msg\":\"sẵn sàng\"}";
+        }
     }
 
     public boolean waitReady(int seconds) {
