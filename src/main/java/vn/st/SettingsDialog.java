@@ -13,16 +13,18 @@ public class SettingsDialog extends JDialog {
     private final JTextField url = new JTextField(24), model = new JTextField(24);
     private final JPasswordField key = new JPasswordField(24);
     private final JComboBox<String> mode = new JComboBox<>(new String[]{"speed", "accuracy"});
+    private final JComboBox<String> cpu = new JComboBox<>(new String[]{
+            "Cân bằng (khuyên dùng)", "Tiết kiệm CPU (máy nóng/yếu, chạy lâu)", "Tối đa tốc độ (dùng hết nhân CPU)"});
     private final JCheckBox lowEnd = new JCheckBox("Chế độ nhẹ cho máy yếu (thu nhỏ ảnh trước OCR)");
     private final JCheckBox merge = new JCheckBox("Gộp các dòng liền nhau thành đoạn (dịch đúng ngữ cảnh hơn)");
     private final JCheckBox history = new JCheckBox("Lưu lịch sử dịch vào SQLite (~/.screen-translator/history.db)");
     private final JCheckBox hide = new JCheckBox("Ẩn overlay khi chụp (dùng nếu OCR đọc lại bản dịch)");
-    private final JSpinner interval = new JSpinner(new SpinnerNumberModel(250, 50, 3000, 50));
+    private final JSpinner interval = new JSpinner(new SpinnerNumberModel(100, 50, 3000, 50));
     private final JSpinner fontScale = new JSpinner(new SpinnerNumberModel(1.0, 0.5, 2.0, 0.1));
     private final JSlider opacity = new JSlider(0, 255, 255);
     private final JTextField color = new JTextField(10);
     private final JSpinner minConf = new JSpinner(new SpinnerNumberModel(0.5, 0.1, 0.95, 0.05));
-    private final JComboBox<String> hk1 = fkeys(), hk2 = fkeys(), hk3 = fkeys(), hk4 = fkeys();
+    private final JComboBox<String> hk1 = fkeys(), hk2 = fkeys(), hk3 = fkeys(), hk4 = fkeys(), hk5 = fkeys();
     private final JTextField python = new JTextField(24);
 
     private static JComboBox<String> fkeys() {
@@ -54,6 +56,7 @@ public class SettingsDialog extends JDialog {
         model.setText(cfg.openaiModel);
         key.setText(cfg.getApiKey());
         mode.setSelectedItem(cfg.mode);
+        cpu.setSelectedIndex(Math.max(0, Math.min(2, cfg.cpuMode)));
         lowEnd.setSelected(cfg.lowEnd);
         merge.setSelected(cfg.mergeLines);
         history.setSelected(cfg.saveHistory);
@@ -67,13 +70,15 @@ public class SettingsDialog extends JDialog {
         hk2.setSelectedItem(cfg.hkPause);
         hk3.setSelectedItem(cfg.hkReselect);
         hk4.setSelectedItem(cfg.hkStop);
+        hk5.setSelectedItem(cfg.hkFull);
         python.setText(cfg.pythonExe);
 
-        add("Dịch vụ (offline = từ điển, không cần mạng):", provider);
+        add("Dịch vụ (offline = từ điển Trung–Việt, không cần mạng; ngôn ngữ khác tự dùng google):", provider);
         add("API URL (openai/Ollama):", url);
         add("Model:", model);
         add("API key:", key);
         add("Ưu tiên:", mode);
+        add("Mức dùng CPU:", cpu);
         span(lowEnd);
         span(merge);
         add("Tốc độ quét (ms):", interval);
@@ -98,6 +103,7 @@ public class SettingsDialog extends JDialog {
         add("Phím: tạm dừng/tiếp tục:", hk2);
         add("Phím: chọn lại vùng:", hk3);
         add("Phím: dừng dịch:", hk4);
+        add("Phím: dịch toàn màn hình (bấm lại để dừng):", hk5);
         span(hide);
         span(history);
         add("Python (để trống = tự tìm):", python);
@@ -132,6 +138,7 @@ public class SettingsDialog extends JDialog {
         cfg.openaiModel = model.getText().trim();
         cfg.setApiKey(new String(key.getPassword()).trim());
         cfg.mode = (String) mode.getSelectedItem();
+        cfg.cpuMode = cpu.getSelectedIndex();
         cfg.lowEnd = lowEnd.isSelected();
         cfg.mergeLines = merge.isSelected();
         cfg.saveHistory = history.isSelected();
@@ -145,6 +152,7 @@ public class SettingsDialog extends JDialog {
         cfg.hkPause = (String) hk2.getSelectedItem();
         cfg.hkReselect = (String) hk3.getSelectedItem();
         cfg.hkStop = (String) hk4.getSelectedItem();
+        cfg.hkFull = (String) hk5.getSelectedItem();
         cfg.pythonExe = python.getText().trim();
         cfg.save();
     }
